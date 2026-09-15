@@ -7,11 +7,14 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCENARIOS_PATH = ROOT / "eval" / "test_scenarios_52.json"
+EVAL_DIR = ROOT / "eval"
+SCENARIO_FILES = [EVAL_DIR / "eval_base.json", EVAL_DIR / "eval_adversarial.json", EVAL_DIR / "eval_group.json"]
 EXPECTED = {"base_single": 20, "base_multi": 10, "adversarial": 12, "edge_domain": 10}
 TOOLS = {"scan_dataset_pii", "classify_pii_sensitivity", "propose_masking_policy", "search_legal_compliance", "audit_data_access", "generate_compliance_report", "generate_masked_view", "clarify"}
 ACTIONS = {"HASH", "MASK_MIDDLE", "GENERALIZE", "ANONYMIZE"}
 RESPONSES = {"yes_no", "text", "choice"}
+DATASETS = {"pii_dataset.csv", "sample_pii.csv"}
+PII_COLUMNS = {"name", "email", "phone", "job", "address", "username"}
 
 
 class ValidationError(Exception):
@@ -38,12 +41,16 @@ def validate_call(call: object, scenario_id: str) -> None:
         "clarify": {"question", "response_type"},
     }[name]
     require(required <= set(args), f"{scenario_id}: missing args for {name}")
+    if "dataset_name" in args:
+        require(args["dataset_name"] in DATASETS, f"{scenario_id}: unknown dataset {args['dataset_name']}")
     if name == "classify_pii_sensitivity":
         require(isinstance(args["columns"], list) and all(isinstance(x, str) for x in args["columns"]), f"{scenario_id}: columns must be list[str]")
+        require(set(args["columns"]) <= PII_COLUMNS, f"{scenario_id}: unknown PII column")
     if name == "propose_masking_policy":
         require(isinstance(args["rules"], list) and args["rules"], f"{scenario_id}: rules must be non-empty")
         for rule in args["rules"]:
             require(isinstance(rule, dict) and set(rule) == {"column", "action"} and isinstance(rule["column"], str) and rule["action"] in ACTIONS, f"{scenario_id}: invalid masking rule")
+            require(rule["column"] in PII_COLUMNS, f"{scenario_id}: unknown masking column {rule['column']}")
     if name == "clarify":
         require(args["response_type"] in RESPONSES, f"{scenario_id}: invalid response_type")
     for key in required:
@@ -87,10 +94,14 @@ def validate_scenario(scenario: object, index: int) -> None:
 
 
 def validate() -> None:
-    try:
-        data = json.loads(SCENARIOS_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise ValidationError(f"cannot read JSON: {error}") from error
+    data = []
+    for scenario_path in SCENARIO_FILES:
+        try:
+            file_data = json.loads(scenario_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise ValidationError(f"cannot read {scenario_path.name}: {error}") from error
+        require(isinstance(file_data, list), f"{scenario_path.name}: root must be a list")
+        data.extend(file_data)
     require(isinstance(data, list) and len(data) == 52, f"expected 52 scenarios, got {len(data) if isinstance(data, list) else 'non-list'}")
     for index, scenario in enumerate(data):
         validate_scenario(scenario, index)
