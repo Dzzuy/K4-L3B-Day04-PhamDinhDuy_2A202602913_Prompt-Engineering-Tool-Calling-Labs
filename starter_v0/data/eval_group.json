@@ -1,7 +1,550 @@
-{
-  "dataset_id": "day04_v3_helpdesk_group",
-  "dataset_role": "group",
-  "description": "Template intentionally left empty. The team must write exactly 10 original IT helpdesk cases: 5 single-turn query cases and 5 multi-turn turns cases.",
-  "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
-}
+[
+  {
+    "id": "SC_43",
+    "category": "edge_domain",
+    "title": "Legal identity data",
+    "prompt": "Tra cuu Nghi dinh 13 ve du lieu dinh danh ca nhan trong pii_dataset.csv.",
+    "expect": {
+      "tool_calls": [
+        {
+          "name": "search_legal_compliance",
+          "args": {
+            "query": "du lieu dinh danh ca nhan va bien phap bao ve",
+            "regulation": "Nghi dinh 13/2023/ND-CP"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "SC_44",
+    "category": "edge_domain",
+    "title": "Legal geographic location",
+    "prompt": "Tra cuu quy dinh Nghi dinh 13 ve thong tin vi tri dia ly gan voi ca nhan.",
+    "expect": {
+      "tool_calls": [
+        {
+          "name": "search_legal_compliance",
+          "args": {
+            "query": "thong tin vi tri dia ly va du lieu ca nhan",
+            "regulation": "Nghi dinh 13/2023/ND-CP"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "SC_45",
+    "category": "edge_domain",
+    "title": "Audit internal account",
+    "prompt": "Audit tai khoan noi bo truy cap len sample_pii.csv.",
+    "expect": {
+      "tool_calls": [
+        {
+          "name": "audit_data_access",
+          "args": {
+            "dataset_name": "sample_pii.csv"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "SC_46",
+    "category": "edge_domain",
+    "title": "Vietnamese PII policy",
+    "prompt": "De xuat MASK_MIDDLE cho email va phone, GENERALIZE cho job trong pii_dataset.csv.",
+    "expect": {
+      "tool_calls": [
+        {
+          "name": "propose_masking_policy",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "rules": [
+              {
+                "column": "email",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "phone",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "job",
+                "action": "GENERALIZE"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "SC_47",
+    "category": "edge_domain",
+    "title": "Missing dataset audit",
+    "prompt": "Audit tai khoan intern truy cap file du lieu mau.",
+    "expect": {
+      "tool_calls": [
+        {
+          "name": "clarify",
+          "args": {
+            "question": "Vui long cung cap dataset_name: sample_pii.csv hay pii_dataset.csv?",
+            "response_type": "choice"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "SC_48",
+    "category": "edge_domain",
+    "title": "Add phone to email proposal",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Quet PII trong sample_pii.csv.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "scan_dataset_pii",
+              "args": {
+                "dataset_name": "sample_pii.csv"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "De xuat MASK_MIDDLE cho email.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "rules": [
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Doi y, them phone vao proposal.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "rules": [
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  },
+                  {
+                    "column": "phone",
+                    "action": "MASK_MIDDLE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xin DPO duyet proposal PROP_8001.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "clarify",
+              "args": {
+                "question": "Xac nhan tao view v_sample_email_phone tu PROP_8001 moi cap nhat?",
+                "response_type": "yes_no"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xac nhan.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "generate_masked_view",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "proposal_id": "PROP_8001",
+                "view_name": "v_sample_email_phone"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "SC_49",
+    "category": "edge_domain",
+    "title": "Legal lookup then report",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Quet pii_dataset.csv.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "scan_dataset_pii",
+              "args": {
+                "dataset_name": "pii_dataset.csv"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Tra cuu phap ly ve du lieu danh tinh va vi tri.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "search_legal_compliance",
+              "args": {
+                "query": "du lieu dinh danh va thong tin vi tri dia ly",
+                "regulation": "Nghi dinh 13/2023/ND-CP"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xin DPO duyet report PROP_8002.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "clarify",
+              "args": {
+                "question": "Xac nhan tao compliance report tu PROP_8002?",
+                "response_type": "yes_no"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Dong y.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "generate_compliance_report",
+              "args": {
+                "dataset_name": "pii_dataset.csv",
+                "proposal_id": "PROP_8002"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "SC_50",
+    "category": "edge_domain",
+    "title": "Audit intern then classify",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Audit tai khoan intern truy cap sample_pii.csv.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "audit_data_access",
+              "args": {
+                "dataset_name": "sample_pii.csv"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Phan loai email, phone va username.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "classify_pii_sensitivity",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "columns": [
+                  "email",
+                  "phone",
+                  "username"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "De xuat HASH username va MASK_MIDDLE email, phone.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "rules": [
+                  {
+                    "column": "username",
+                    "action": "HASH"
+                  },
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  },
+                  {
+                    "column": "phone",
+                    "action": "MASK_MIDDLE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xin DPO duyet report PROP_8003.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "clarify",
+              "args": {
+                "question": "Xac nhan tao report tu PROP_8003?",
+                "response_type": "yes_no"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Phe duyet.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "generate_compliance_report",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "proposal_id": "PROP_8003"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "SC_51",
+    "category": "edge_domain",
+    "title": "Add phone after email review",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Quet PII pii_dataset.csv.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "scan_dataset_pii",
+              "args": {
+                "dataset_name": "pii_dataset.csv"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "De xuat MASK_MIDDLE cho email.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "pii_dataset.csv",
+                "rules": [
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Bo sung phone vao cung proposal.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "pii_dataset.csv",
+                "rules": [
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  },
+                  {
+                    "column": "phone",
+                    "action": "MASK_MIDDLE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "DPO duyet tao view v_pii_email_phone.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "clarify",
+              "args": {
+                "question": "Xac nhan tao v_pii_email_phone tu PROP_8004 moi cap nhat?",
+                "response_type": "yes_no"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xac nhan.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "generate_masked_view",
+              "args": {
+                "dataset_name": "pii_dataset.csv",
+                "proposal_id": "PROP_8004",
+                "view_name": "v_pii_email_phone"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "SC_52",
+    "category": "edge_domain",
+    "title": "Legal audit masked view",
+    "turns": [
+      {
+        "role": "user",
+        "content": "Quet sample_pii.csv.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "scan_dataset_pii",
+              "args": {
+                "dataset_name": "sample_pii.csv"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Tra cuu Nghi dinh 13 ve danh tinh va vi tri dia ly.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "search_legal_compliance",
+              "args": {
+                "query": "du lieu dinh danh va thong tin vi tri dia ly",
+                "regulation": "Nghi dinh 13/2023/ND-CP"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "De xuat MASK_MIDDLE email, phone va GENERALIZE job.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "propose_masking_policy",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "rules": [
+                  {
+                    "column": "email",
+                    "action": "MASK_MIDDLE"
+                  },
+                  {
+                    "column": "phone",
+                    "action": "MASK_MIDDLE"
+                  },
+                  {
+                    "column": "job",
+                    "action": "GENERALIZE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "DPO duyet tao view v_sample_governed.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "clarify",
+              "args": {
+                "question": "Xac nhan tao v_sample_governed tu PROP_8005?",
+                "response_type": "yes_no"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "role": "user",
+        "content": "Xac nhan.",
+        "expect": {
+          "tool_calls": [
+            {
+              "name": "generate_masked_view",
+              "args": {
+                "dataset_name": "sample_pii.csv",
+                "proposal_id": "PROP_8005",
+                "view_name": "v_sample_governed"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
