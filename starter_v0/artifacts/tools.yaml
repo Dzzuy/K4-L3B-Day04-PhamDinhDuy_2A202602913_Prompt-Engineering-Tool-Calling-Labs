@@ -1,107 +1,83 @@
-# starter_v0 — intentionally incomplete first-draft declarations.
-# Students improve routing guidance, argument conventions, missing-information
-# handling, and confirmation boundaries through v1/v2/v3.
-#
-# Keep built-in names and supplied evaluation cases unchanged.
-# Improve descriptions and compatible schemas. Declare team-built bonus tools
-# here and in tools/__init__.py, then test them with team-authored cases.
 tools:
-  # ---------------- Core tools ----------------
   - name: clarify
-    description: "Gửi một câu hỏi cho người dùng."
+    description: "Gửi một câu hỏi cho người dùng/DPO để xin ý kiến phê duyệt hoặc bổ sung thông tin bị thiếu."
     parameters:
       type: object
       properties:
-        question: {type: string, default: "", description: "Câu hỏi"}
-        response_type: {type: string, enum: [text, yes_no, choice], default: "text", description: "Kiểu trả lời"}
-        options: {type: array, default: [], items: {type: string}, description: "Các lựa chọn"}
+        question: {type: string, description: "Nội dung câu hỏi xin ý kiến hoặc phê duyệt"}
+        response_type: {type: string, enum: [text, yes_no, choice], default: "yes_no", description: "Kiểu phản hồi kỳ vọng"}
+        options: {type: array, default: [], items: {type: string}, description: "Danh sách lựa chọn nếu có"}
       required: [question]
 
-  - name: search_kb
-    description: "Tìm hướng dẫn hỗ trợ kỹ thuật."
+  - name: scan_dataset_pii
+    description: "Quét một file/bảng dữ liệu để phát hiện các cột chứa thông tin định danh cá nhân PII (CCCD, SĐT, Email, Bệnh án...)."
     parameters:
       type: object
       properties:
-        query: {type: string, default: "", description: "Nội dung cần tìm"}
-        category: {type: string, enum: [all, vpn, email, wifi, printing, account, security, hardware, software, meeting_room], default: "all", description: "Nhóm hướng dẫn"}
-        top_k: {type: integer, default: 3, description: "Số kết quả"}
-      required: [query]
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu cần quét, ví dụ: patients.csv"}
+      required: [dataset_name]
 
-  - name: check_service_status
-    description: "Kiểm tra trạng thái một dịch vụ."
+  - name: classify_pii_sensitivity
+    description: "Phân loại mức độ nhạy cảm của dữ liệu cá nhân (HIGH, MEDIUM, LOW) theo Nghị định 13/2023/NĐ-CP."
     parameters:
       type: object
       properties:
-        service: {type: string, enum: [vpn, email, sso, wifi, printing], description: "Tên dịch vụ"}
-        environment: {type: string, enum: [production, staging], default: "production", description: "Môi trường"}
-      required: [service]
-
-  - name: inspect_device
-    description: "Kiểm tra thông tin và chẩn đoán thiết bị."
-    parameters:
-      type: object
-      properties:
-        asset_id: {type: string, description: "Mã tài sản"}
-        check: {type: string, enum: [all, network, vpn, security, hardware, software], default: "all", description: "Nhóm kiểm tra"}
-      required: [asset_id]
-
-  - name: lookup_user
-    description: "Tra cứu người dùng trong danh bạ hỗ trợ."
-    parameters:
-      type: object
-      properties:
-        employee_id: {type: string, description: "Mã nhân viên"}
-      required: [employee_id]
-
-  - name: format_incident_report
-    description: "Trình bày các kết quả đã có thành báo cáo."
-    parameters:
-      type: object
-      properties:
-        findings:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        columns:
           type: array
-          default: []
-          description: "Các kết quả đã thu thập"
+          items: {type: string}
+          description: "Danh sách tên các cột cần đánh giá rủi ro nhạy cảm"
+      required: [dataset_name, columns]
+
+  - name: propose_masking_policy
+    description: "Đề xuất quy tắc che/mã hóa dữ liệu phù hợp (HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE) cho các cột PII."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        rules:
+          type: array
+          description: "Danh sách quy tắc đề xuất cho từng cột"
           items:
             type: object
             properties:
-              label: {type: string}
-              detail: {type: string}
-              source: {type: string}
-              status: {type: string}
-        template: {type: string, enum: [brief, technical, handoff], default: "brief", description: "Mẫu báo cáo"}
-        incident_title: {type: string, default: "IT incident", description: "Tiêu đề"}
-      required: [findings, template]
+              column: {type: string, description: "Tên cột cần che"}
+              action: {type: string, enum: [HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE], description: "Hành động che dữ liệu"}
+            required: [column, action]
+      required: [dataset_name, rules]
 
-  # ---------------- Optional/advanced tools ----------------
-  - name: search_device_info
-    description: "Tìm thông tin công khai về một model thiết bị trên web. Chỉ truyền hãng, model và loại thông tin; không truyền asset ID, employee ID hoặc dữ liệu nội bộ."
+  - name: search_legal_compliance
+    description: "Tra cứu các điều khoản pháp lý trong Nghị định 13/2023/NĐ-CP hoặc GDPR về bảo vệ dữ liệu cá nhân."
     parameters:
       type: object
       properties:
-        manufacturer: {type: string, description: "Hãng sản xuất công khai, ví dụ Lenovo"}
-        model: {type: string, description: "Tên model công khai, ví dụ ThinkPad T14 Gen 4"}
-        query_type: {type: string, enum: [specs, drivers, support, compatibility], default: "support", description: "Loại thông tin cần tìm"}
-        max_results: {type: integer, default: 3, description: "Số kết quả, tối đa 5"}
-      required: [manufacturer, model, query_type]
-
-  - name: policy
-    description: "Tìm trong chính sách IT nội bộ."
-    parameters:
-      type: object
-      properties:
-        query: {type: string, default: "", description: "Nội dung cần tìm"}
-        policy_area: {type: string, enum: [all, access_control, data_privacy, external_tools, incident_response, service_operations, ticketing], default: "all", description: "Nhóm chính sách"}
-        top_k: {type: integer, default: 3, description: "Số mục"}
+        query: {type: string, description: "Từ khóa hoặc nội dung pháp lý cần tra cứu, ví dụ: dữ liệu y tế nhạy cảm"}
+        regulation: {type: string, default: "Nghị định 13/2023/NĐ-CP", description: "Tên văn bản quy phạm pháp luật"}
       required: [query]
 
-  - name: create_ticket
-    description: "Tạo một ticket hỗ trợ."
+  - name: audit_data_access
+    description: "Rà soát lịch sử log truy cập (Access Log) để phát hiện các hành vi truy cập PII thô bất thường hoặc trái phép."
     parameters:
       type: object
       properties:
-        summary: {type: string, default: "", description: "Tóm tắt sự cố"}
-        priority: {type: string, enum: [low, medium, high, critical], default: "medium", description: "Mức ưu tiên"}
-        asset_id: {type: string, default: "", description: "Mã tài sản nếu có"}
-        confirmed: {type: boolean, default: false, description: "Đã được người dùng xác nhận"}
-      required: [summary]
+        dataset_name: {type: string, description: "Tên dataset cần rà soát log truy cập"}
+      required: [dataset_name]
+
+  - name: generate_compliance_report
+    description: "Tổng hợp báo cáo tuân thủ rà soát bảo vệ dữ liệu cá nhân dạng Markdown để trình DPO hoặc Ban Giám đốc."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        proposal_id: {type: string, description: "Mã bản thảo đề xuất chính sách, ví dụ: PROP_1001"}
+      required: [dataset_name, proposal_id]
+
+  - name: generate_masked_view
+    description: "Sinh câu lệnh SQL CREATE VIEW v_..._masked đã được che PII an toàn sau khi chính sách đã được DPO phê duyệt."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên dataset gốc"}
+        proposal_id: {type: string, description: "Mã đề xuất đã được DPO phê duyệt"}
+        view_name: {type: string, description: "Tên SQL View mới cần sinh, ví dụ: v_patients_masked"}
+      required: [dataset_name, proposal_id, view_name]

@@ -6,30 +6,24 @@ from typing import Any
 import yaml
 
 from .clarify.tool import ask_user
-from .check_service_status.tool import check_service_status
-from .create_ticket.tool import create_ticket
-from .format_incident_report.tool import format_incident_report
-from .inspect_device.tool import inspect_device
-from .lookup_user.tool import lookup_user
-from .policy.tool import search_company_policy
-from .search_kb.tool import search_kb
-from .search_device_info.tool import search_device_info
+from .scan_dataset_pii.tool import scan_dataset_pii
+from .classify_pii_sensitivity.tool import classify_pii_sensitivity
+from .propose_masking_policy.tool import propose_masking_policy
+from .search_legal_compliance.tool import search_legal_compliance
+from .audit_data_access.tool import audit_data_access
+from .generate_compliance_report.tool import generate_compliance_report
+from .generate_masked_view.tool import generate_masked_view
 
-
-# These names are part of the fixed evaluation contract. Keep built-in names
-# unchanged in tools.yaml, this registry and the supplied datasets. Improve
-# descriptions and compatible schemas. Register any team-built bonus tool in
-# this registry and tools.yaml, then test it with team-authored cases.
+# Registry mapping tool names defined in tools.yaml to Python functions
 TOOL_FUNCTIONS = {
     "clarify": ask_user,
-    "search_kb": search_kb,
-    "search_device_info": search_device_info,
-    "check_service_status": check_service_status,
-    "inspect_device": inspect_device,
-    "lookup_user": lookup_user,
-    "format_incident_report": format_incident_report,
-    "policy": search_company_policy,
-    "create_ticket": create_ticket,
+    "scan_dataset_pii": scan_dataset_pii,
+    "classify_pii_sensitivity": classify_pii_sensitivity,
+    "propose_masking_policy": propose_masking_policy,
+    "search_legal_compliance": search_legal_compliance,
+    "audit_data_access": audit_data_access,
+    "generate_compliance_report": generate_compliance_report,
+    "generate_masked_view": generate_masked_view,
 }
 
 
