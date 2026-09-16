@@ -1,0 +1,83 @@
+tools:
+  - name: clarify
+    description: "Purpose: ask for genuinely missing information. USE WHEN a required argument for the intended tool is absent. DO NOT USE WHEN the request already contains all required arguments or is out of scope. Required arguments: question; use response_type and options only when appropriate."
+    parameters:
+      type: object
+      properties:
+        question: {type: string, description: "Nội dung câu hỏi xin ý kiến hoặc phê duyệt"}
+        response_type: {type: string, enum: [text, yes_no, choice], default: "yes_no", description: "Kiểu phản hồi kỳ vọng"}
+        options: {type: array, default: [], items: {type: string}, description: "Danh sách lựa chọn nếu có"}
+      required: [question]
+
+  - name: scan_dataset_pii
+    description: "Purpose: initial discovery of PII columns in a dataset. USE WHEN the user asks what PII exists or asks to scan an identified dataset. DO NOT USE WHEN columns are already known and the request is only sensitivity classification, masking, legal research, reporting, or access audit. Required argument: dataset_name exactly as supplied."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu cần quét, ví dụ: patients.csv"}
+      required: [dataset_name]
+
+  - name: classify_pii_sensitivity
+    description: "Purpose: classify known columns as HIGH, MEDIUM, or LOW sensitivity. USE WHEN a dataset and the target columns are known and sensitivity is requested. DO NOT USE for initial PII discovery. Required arguments: dataset_name and columns, preserved exactly as supplied."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        columns:
+          type: array
+          items: {type: string}
+          description: "Danh sách tên các cột cần đánh giá rủi ro nhạy cảm"
+      required: [dataset_name, columns]
+
+  - name: propose_masking_policy
+    description: "Purpose: propose masking rules for known PII columns. USE WHEN the user requests a masking strategy or action. DO NOT USE for scanning, classification, legal research, reports, or materializing a view. Required arguments: dataset_name and rules. Allowed actions only: HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        rules:
+          type: array
+          description: "Danh sách quy tắc đề xuất cho từng cột"
+          items:
+            type: object
+            properties:
+              column: {type: string, description: "Tên cột cần che"}
+              action: {type: string, enum: [HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE], description: "Hành động che dữ liệu"}
+            required: [column, action]
+      required: [dataset_name, rules]
+
+  - name: search_legal_compliance
+    description: "Purpose: look up privacy, legal, or regulation information. USE WHEN the request asks about Decree 13, GDPR, legal duties, or compliance rules. DO NOT USE for dataset scanning, sensitivity classification, masking, reports, views, or access logs. Required argument: query."
+    parameters:
+      type: object
+      properties:
+        query: {type: string, description: "Từ khóa hoặc nội dung pháp lý cần tra cứu, ví dụ: dữ liệu y tế nhạy cảm"}
+        regulation: {type: string, default: "Nghị định 13/2023/NĐ-CP", description: "Tên văn bản quy phạm pháp luật"}
+      required: [query]
+
+  - name: audit_data_access
+    description: "Purpose: review access logs for who accessed a dataset or suspicious PII access. USE WHEN access history, actors, or suspicious access is requested. DO NOT USE for scanning columns, sensitivity classification, masking, legal research, reports, or views. Required argument: dataset_name."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên dataset cần rà soát log truy cập"}
+      required: [dataset_name]
+
+  - name: generate_compliance_report
+    description: "Purpose: generate a compliance report from an existing proposal. USE WHEN report generation is explicitly requested and both identifiers are available. DO NOT USE to create a masked view or when proposal_id is missing; ask with clarify instead. Required arguments: dataset_name and proposal_id exactly as supplied; never invent proposal_id."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        proposal_id: {type: string, description: "Mã bản thảo đề xuất chính sách, ví dụ: PROP_1001"}
+      required: [dataset_name, proposal_id]
+
+  - name: generate_masked_view
+    description: "Purpose: materialize an existing masking proposal as a masked SQL view. USE WHEN a masked view is explicitly requested and all identifiers are available. DO NOT USE for proposing policy or reporting, or when dataset_name, proposal_id, or view_name is missing; ask with clarify instead. Required arguments: dataset_name, proposal_id, view_name exactly as supplied; never invent values."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên dataset gốc"}
+        proposal_id: {type: string, description: "Mã đề xuất đã được DPO phê duyệt"}
+        view_name: {type: string, description: "Tên SQL View mới cần sinh, ví dụ: v_patients_masked"}
+      required: [dataset_name, proposal_id, view_name]

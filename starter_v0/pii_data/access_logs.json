@@ -1,0 +1,32 @@
+[
+  {
+    "log_id": "LOG_1001",
+    "timestamp": "2026-09-15T08:14:22Z",
+    "user_id": "intern_dev_01",
+    "role": "INTERN",
+    "dataset": "patients.csv",
+    "queried_columns": ["patient_id", "so_cccd", "so_dienthoai"],
+    "action": "SELECT_RAW",
+    "status": "SUSPICIOUS_UNAUTHORIZED_PII_ACCESS"
+  },
+  {
+    "log_id": "LOG_1002",
+    "timestamp": "2026-09-15T09:30:00Z",
+    "user_id": "bi_analyst_05",
+    "role": "ANALYST",
+    "dataset": "patients.csv",
+    "queried_columns": ["patient_id", "nhom_mau"],
+    "action": "SELECT_AGGREGATED",
+    "status": "AUTHORIZED"
+  },
+  {
+    "log_id": "LOG_1003",
+    "timestamp": "2026-09-15T11:05:10Z",
+    "user_id": "external_vendor_dev",
+    "role": "VENDOR",
+    "dataset": "patients.csv",
+    "queried_columns": ["so_cccd", "chan_doan", "ma_bhyt"],
+    "action": "EXPORT_RAW_CSV",
+    "status": "HIGH_RISK_UNAUTHORIZED_EXFILTRATION_ATTEMPT"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "article": "Điều 2",
+    "title": "Giải thích từ ngữ - Dữ liệu cá nhân nhạy cảm",
+    "content": "Dữ liệu cá nhân nhạy cảm là dữ liệu cá nhân gắn liền với quyền riêng tư của cá nhân mà khi bị xâm phạm sẽ ảnh hưởng trực tiếp đến quyền và lợi ích hợp pháp của cá nhân, bao gồm: thông tin y tế, tình trạng sức khỏe, thông tin tài chính, dữ liệu định danh (CCCD/CMND), vị trí địa lý."
+  },
+  {
+    "article": "Điều 9",
+    "title": "Quyền của chủ thể dữ liệu",
+    "content": "Chủ thể dữ liệu có quyền được biết, đồng ý hoặc rút lại sự đồng ý, truy cập, chỉnh sửa, yêu cầu xóa dữ liệu cá nhân, hạn chế xử lý dữ liệu và khiếu nại bồi thường thiệt hại."
+  },
+  {
+    "article": "Điều 17",
+    "title": "Bảo vệ dữ liệu cá nhân trong quá trình xử lý",
+    "content": "Bên xử lý dữ liệu phải áp dụng các biện pháp kỹ thuật và quản lý phù hợp (như mã hóa, che dữ liệu/masking, phân quyền truy cập) để bảo vệ dữ liệu cá nhân khỏi bị rò rỉ, truy cập trái phép hoặc mất mát."
+  },
+  {
+    "article": "Điều 28",
+    "title": "Xử lý dữ liệu cá nhân nhạy cảm trong lĩnh vực y tế & tài chính",
+    "content": "Việc xử lý dữ liệu y tế, hồ sơ bệnh án và dữ liệu tài chính bắt buộc phải có sự đồng ý của chủ thể dữ liệu và phải áp dụng biện pháp bảo mật cấp độ cao nhất (Hashing/Tokenization) trước khi chia sẻ cho các bên liên quan."
+  }
+]
