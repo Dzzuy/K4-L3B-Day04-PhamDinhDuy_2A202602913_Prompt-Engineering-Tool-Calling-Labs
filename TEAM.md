@@ -101,7 +101,7 @@ Sao chép mục này cho từng thành viên.
 - **Quyết định, khó khăn và cách xử lý:** Tách phần giao diện và backend web khỏi core agent để có thể tích hợp với phiên bản agent cuối mà không làm thay đổi prompt/evaluation.
 - **Điều đã học:** Hiểu rõ hơn cách kết nối frontend với AI backend và cách biểu diễn tool result, dataset analysis và masking workflow trên UI.
 - **AI/công cụ đã dùng và cách kiểm tra:** Phát triển và kiểm tra giao diện/web integration trên branch riêng trước khi merge vào branch nộp bài.
-- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:56:19 16/9/2026
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:54:35 16/9/2026
 
 ### Nguyễn Hữu Chương — 2A202602601
 
