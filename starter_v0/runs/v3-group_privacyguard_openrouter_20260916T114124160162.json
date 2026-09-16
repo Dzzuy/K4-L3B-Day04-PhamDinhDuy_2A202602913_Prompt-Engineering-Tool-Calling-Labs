@@ -1,0 +1,743 @@
+{
+  "run_id": "v3-group_privacyguard_openrouter_20260916T114124160162",
+  "version": "v3-group",
+  "artifact_version": "v3-group+paa4a4656cd8f+tc49b8b837a94",
+  "prompt_hash": "aa4a4656cd8f5fb75898602bd9df7130f4a6d6cc6f5eb8a11598ed914c4307a0",
+  "tools_hash": "c49b8b837a94137055e062815b708c0e0379c2242d8d062c2655ceb9cbf052d8",
+  "provider": "openrouter",
+  "model": "openai/gpt-4.1-mini",
+  "system_prompt": "artifacts/versions/v3/system_prompt.md",
+  "tools": "artifacts/versions/v3/tools.yaml",
+  "eval_files": [
+    "../eval/eval_group.json"
+  ],
+  "generated_at": "2026-09-16T11:41:24",
+  "summary": {
+    "total_cases": 10,
+    "measured_cases": 10,
+    "provider_error_cases": 0,
+    "passed_cases": 4,
+    "case_accuracy": 0.4,
+    "tool_routing_accuracy": 0.9,
+    "argument_accuracy": 0.4,
+    "multiturn_accuracy": 0.4,
+    "base_multiturn_accuracy": null,
+    "adversarial_passed_cases": 0,
+    "adversarial_total_cases": 0,
+    "cases_evaluated": 10,
+    "failure_counts": {
+      "wrong_arg_value": 5,
+      "wrong_tool": 1
+    }
+  },
+  "results": [
+    {
+      "id": "SC_43",
+      "category": "edge_domain",
+      "title": "Legal identity data",
+      "is_multiturn": false,
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "query: expected 'du lieu dinh danh ca nhan va bien phap bao ve', got 'dữ liệu định danh cá nhân'",
+          "regulation: expected 'Nghi dinh 13/2023/ND-CP', got 'Nghị định 13/2023/NĐ-CP'"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tra cuu Nghi dinh 13 ve du lieu dinh danh ca nhan trong pii_dataset.csv."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "search_legal_compliance",
+            "args": {
+              "query": "du lieu dinh danh ca nhan va bien phap bao ve",
+              "regulation": "Nghi dinh 13/2023/ND-CP"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "search_legal_compliance",
+          "args": {
+            "query": "dữ liệu định danh cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "search_legal_compliance",
+          "args": {
+            "query": "dữ liệu định danh cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP"
+          },
+          "result": {
+            "tool": "search_legal_compliance",
+            "query": "dữ liệu định danh cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP",
+            "results": [
+              {
+                "article": "Điều 2",
+                "title": "Giải thích từ ngữ - Dữ liệu cá nhân nhạy cảm",
+                "summary": "Dữ liệu cá nhân nhạy cảm là dữ liệu cá nhân gắn liền với quyền riêng tư của cá nhân mà khi bị xâm phạm sẽ ảnh hưởng trực tiếp đến quyền và lợi ích hợp pháp của cá nhân, bao gồm: thông tin y tế, tình trạng sức khỏe, thông tin tài chính, dữ liệu định danh (CCCD/CMND), vị trí địa lý.",
+                "score": 6
+              },
+              {
+                "article": "Điều 17",
+                "title": "Bảo vệ dữ liệu cá nhân trong quá trình xử lý",
+                "summary": "Bên xử lý dữ liệu phải áp dụng các biện pháp kỹ thuật và quản lý phù hợp (như mã hóa, che dữ liệu/masking, phân quyền truy cập) để bảo vệ dữ liệu cá nhân khỏi bị rò rỉ, truy cập trái phép hoặc mất mát.",
+                "score": 4
+              },
+              {
+                "article": "Điều 28",
+                "title": "Xử lý dữ liệu cá nhân nhạy cảm trong lĩnh vực y tế & tài chính",
+                "summary": "Việc xử lý dữ liệu y tế, hồ sơ bệnh án và dữ liệu tài chính bắt buộc phải có sự đồng ý của chủ thể dữ liệu và phải áp dụng biện pháp bảo mật cấp độ cao nhất (Hashing/Tokenization) trước khi chia sẻ cho các bên liên quan.",
+                "score": 4
+              }
+            ],
+            "source": "local_decree_13_knowledge",
+            "notice": "Thông tin tham khảo từ catalog nội bộ của bài lab, không phải tư vấn pháp lý."
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_44",
+      "category": "edge_domain",
+      "title": "Legal geographic location",
+      "is_multiturn": false,
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "query: expected 'thong tin vi tri dia ly va du lieu ca nhan', got 'thông tin vị trí địa lý gần với cá nhân'",
+          "regulation: expected 'Nghi dinh 13/2023/ND-CP', got 'Nghị định 13/2023/NĐ-CP'"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tra cuu quy dinh Nghi dinh 13 ve thong tin vi tri dia ly gan voi ca nhan."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "search_legal_compliance",
+            "args": {
+              "query": "thong tin vi tri dia ly va du lieu ca nhan",
+              "regulation": "Nghi dinh 13/2023/ND-CP"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "search_legal_compliance",
+          "args": {
+            "query": "thông tin vị trí địa lý gần với cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "search_legal_compliance",
+          "args": {
+            "query": "thông tin vị trí địa lý gần với cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP"
+          },
+          "result": {
+            "tool": "search_legal_compliance",
+            "query": "thông tin vị trí địa lý gần với cá nhân",
+            "regulation": "Nghị định 13/2023/NĐ-CP",
+            "results": [
+              {
+                "article": "Điều 2",
+                "title": "Giải thích từ ngữ - Dữ liệu cá nhân nhạy cảm",
+                "summary": "Dữ liệu cá nhân nhạy cảm là dữ liệu cá nhân gắn liền với quyền riêng tư của cá nhân mà khi bị xâm phạm sẽ ảnh hưởng trực tiếp đến quyền và lợi ích hợp pháp của cá nhân, bao gồm: thông tin y tế, tình trạng sức khỏe, thông tin tài chính, dữ liệu định danh (CCCD/CMND), vị trí địa lý.",
+                "score": 10
+              },
+              {
+                "article": "Điều 17",
+                "title": "Bảo vệ dữ liệu cá nhân trong quá trình xử lý",
+                "summary": "Bên xử lý dữ liệu phải áp dụng các biện pháp kỹ thuật và quản lý phù hợp (như mã hóa, che dữ liệu/masking, phân quyền truy cập) để bảo vệ dữ liệu cá nhân khỏi bị rò rỉ, truy cập trái phép hoặc mất mát.",
+                "score": 3
+              },
+              {
+                "article": "Điều 28",
+                "title": "Xử lý dữ liệu cá nhân nhạy cảm trong lĩnh vực y tế & tài chính",
+                "summary": "Việc xử lý dữ liệu y tế, hồ sơ bệnh án và dữ liệu tài chính bắt buộc phải có sự đồng ý của chủ thể dữ liệu và phải áp dụng biện pháp bảo mật cấp độ cao nhất (Hashing/Tokenization) trước khi chia sẻ cho các bên liên quan.",
+                "score": 3
+              }
+            ],
+            "source": "local_decree_13_knowledge",
+            "notice": "Thông tin tham khảo từ catalog nội bộ của bài lab, không phải tư vấn pháp lý."
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_45",
+      "category": "edge_domain",
+      "title": "Audit internal account",
+      "is_multiturn": false,
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "failure_type": null,
+        "failures": []
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Audit tai khoan noi bo truy cap len sample_pii.csv."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "audit_data_access",
+            "args": {
+              "dataset_name": "sample_pii.csv"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "audit_data_access",
+          "args": {
+            "dataset_name": "sample_pii.csv"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "audit_data_access",
+          "args": {
+            "dataset_name": "sample_pii.csv"
+          },
+          "result": {
+            "tool": "audit_data_access",
+            "dataset_name": "sample_pii.csv",
+            "total_logs_analyzed": 1,
+            "suspicious_accesses_found": 1,
+            "logs": [
+              {
+                "log_id": "LOG_1001",
+                "timestamp": "2026-09-15T08:14:22Z",
+                "user_id": "intern_dev_01",
+                "role": "INTERN",
+                "dataset": "sample_pii.csv",
+                "queried_columns": [
+                  "so_cccd",
+                  "so_dienthoai"
+                ],
+                "action": "SELECT_RAW",
+                "status": "SUSPICIOUS_UNAUTHORIZED_PII_ACCESS"
+              }
+            ]
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_46",
+      "category": "edge_domain",
+      "title": "Vietnamese PII policy",
+      "is_multiturn": false,
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "failure_type": null,
+        "failures": []
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "De xuat MASK_MIDDLE cho email va phone, GENERALIZE cho job trong pii_dataset.csv."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "propose_masking_policy",
+            "args": {
+              "dataset_name": "pii_dataset.csv",
+              "rules": [
+                {
+                  "column": "email",
+                  "action": "MASK_MIDDLE"
+                },
+                {
+                  "column": "phone",
+                  "action": "MASK_MIDDLE"
+                },
+                {
+                  "column": "job",
+                  "action": "GENERALIZE"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "propose_masking_policy",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "rules": [
+              {
+                "column": "email",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "phone",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "job",
+                "action": "GENERALIZE"
+              }
+            ]
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "propose_masking_policy",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "rules": [
+              {
+                "column": "email",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "phone",
+                "action": "MASK_MIDDLE"
+              },
+              {
+                "column": "job",
+                "action": "GENERALIZE"
+              }
+            ]
+          },
+          "result": {
+            "tool": "propose_masking_policy",
+            "proposal_id": "PROP_4510",
+            "dataset_name": "pii_dataset.csv",
+            "status": "DRAFT_PENDING_DPO_APPROVAL",
+            "proposed_rules": [
+              {
+                "column": "email",
+                "proposed_action": "MASK_MIDDLE",
+                "transformation_sample": "MASK_MIDDLE(email)"
+              },
+              {
+                "column": "phone",
+                "proposed_action": "MASK_MIDDLE",
+                "transformation_sample": "MASK_MIDDLE(phone)"
+              },
+              {
+                "column": "job",
+                "proposed_action": "GENERALIZE",
+                "transformation_sample": "GENERALIZE(job)"
+              }
+            ],
+            "requires_dpo_approval": true
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_47",
+      "category": "edge_domain",
+      "title": "Missing dataset audit",
+      "is_multiturn": false,
+      "result": {
+        "passed": false,
+        "routing_correct": false,
+        "args_correct": false,
+        "failure_type": "wrong_tool",
+        "failures": [
+          "missing tool call clarify",
+          "extra tool call audit_data_access"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Audit tai khoan intern truy cap file du lieu mau."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "question": "Vui long cung cap dataset_name: sample_pii.csv hay pii_dataset.csv?",
+              "response_type": "choice"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "audit_data_access",
+          "args": {
+            "dataset_name": "mau"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "audit_data_access",
+          "args": {
+            "dataset_name": "mau"
+          },
+          "result": {
+            "tool": "audit_data_access",
+            "dataset_name": "mau",
+            "total_logs_analyzed": 1,
+            "suspicious_accesses_found": 1,
+            "logs": [
+              {
+                "log_id": "LOG_1001",
+                "timestamp": "2026-09-15T08:14:22Z",
+                "user_id": "intern_dev_01",
+                "role": "INTERN",
+                "dataset": "mau",
+                "queried_columns": [
+                  "so_cccd",
+                  "so_dienthoai"
+                ],
+                "action": "SELECT_RAW",
+                "status": "SUSPICIOUS_UNAUTHORIZED_PII_ACCESS"
+              }
+            ]
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_48",
+      "category": "edge_domain",
+      "title": "Add phone to email proposal",
+      "is_multiturn": true,
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "view_name: expected 'v_sample_email_phone', got 'v_sample_pii_masked'"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Conversation context for a multi-turn eval.\nUse earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n- Earlier user turn 1: Quet PII trong sample_pii.csv.\n- Earlier user turn 2: De xuat MASK_MIDDLE cho email.\n- Earlier user turn 3: Doi y, them phone vao proposal.\n- Earlier user turn 4: Xin DPO duyet proposal PROP_8001.\n\nLatest user turn to answer now: Xac nhan."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "generate_masked_view",
+            "args": {
+              "dataset_name": "sample_pii.csv",
+              "proposal_id": "PROP_8001",
+              "view_name": "v_sample_email_phone"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "generate_masked_view",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8001",
+            "view_name": "v_sample_pii_masked"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "generate_masked_view",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8001",
+            "view_name": "v_sample_pii_masked"
+          },
+          "result": {
+            "tool": "generate_masked_view",
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8001",
+            "view_name": "v_sample_pii_masked",
+            "status": "CREATED_SUCCESSFULLY",
+            "sql_ddl": "CREATE VIEW v_sample_pii_masked AS\nSELECT\n    patient_id,\n    full_name,\n    SHA256(so_cccd) AS so_cccd_hashed,\n    CONCAT(SUBSTR(so_dienthoai, 1, 4), '***', SUBSTR(so_dienthoai, 8)) AS so_dienthoai_masked,\n    email,\n    ngay_sinh,\n    nhom_mau,\n    chan_doan,\n    ma_bhyt\nFROM sample_pii;"
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_49",
+      "category": "edge_domain",
+      "title": "Legal lookup then report",
+      "is_multiturn": true,
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "failure_type": null,
+        "failures": []
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Conversation context for a multi-turn eval.\nUse earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n- Earlier user turn 1: Quet pii_dataset.csv.\n- Earlier user turn 2: Tra cuu phap ly ve du lieu danh tinh va vi tri.\n- Earlier user turn 3: Xin DPO duyet report PROP_8002.\n\nLatest user turn to answer now: Dong y."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "generate_compliance_report",
+            "args": {
+              "dataset_name": "pii_dataset.csv",
+              "proposal_id": "PROP_8002"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "generate_compliance_report",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_8002"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "generate_compliance_report",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_8002"
+          },
+          "result": {
+            "tool": "generate_compliance_report",
+            "report_id": "REP_1928",
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_8002",
+            "status": "GENERATED",
+            "markdown_report": "# BÁO CÁO RÀ SOÁT TUÂN THỦ BẢO VỆ DỮ LIỆU CÁ NHÂN (NGHỊ ĐỊNH 13/2023/NĐ-CP)\n- **Mã báo cáo:** REP_1928\n- **Tên Dataset:** pii_dataset.csv\n- **Mã chính sách đề xuất:** PROP_8002\n- **Đánh giá rủi ro chung:** HIGH RISK (Chứa dữ liệu y tế & CCCD)\n\n## 1. Kết quả Rà soát PII\n- Đã phát hiện các cột PII: `so_cccd` (HIGH), `so_dienthoai` (MEDIUM), `chan_doan` (HIGH).\n- Trạng thái phê duyệt DPO: Đã được DPO thẩm định quy tắc che dữ liệu.\n\n## 2. Phương án bảo vệ áp dụng\n- `so_cccd`: Áp dụng Hashing SHA-256.\n- `so_dienthoai`: Áp dụng MASK_MIDDLE (`0987***321`).\n- `chan_doan`: Gom nhóm danh mục chung.\n\n## 3. Khuyến nghị Tuân thủ\nTạo SQL View `v_pii_dataset_masked` cho đội khai thác dữ liệu và phân quyền truy cập theo vai trò (RBAC).\n"
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_50",
+      "category": "edge_domain",
+      "title": "Audit intern then classify",
+      "is_multiturn": true,
+      "result": {
+        "passed": true,
+        "routing_correct": true,
+        "args_correct": true,
+        "failure_type": null,
+        "failures": []
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Conversation context for a multi-turn eval.\nUse earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n- Earlier user turn 1: Audit tai khoan intern truy cap sample_pii.csv.\n- Earlier user turn 2: Phan loai email, phone va username.\n- Earlier user turn 3: De xuat HASH username va MASK_MIDDLE email, phone.\n- Earlier user turn 4: Xin DPO duyet report PROP_8003.\n\nLatest user turn to answer now: Phe duyet."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "generate_compliance_report",
+            "args": {
+              "dataset_name": "sample_pii.csv",
+              "proposal_id": "PROP_8003"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "generate_compliance_report",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8003"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "generate_compliance_report",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8003"
+          },
+          "result": {
+            "tool": "generate_compliance_report",
+            "report_id": "REP_5588",
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_8003",
+            "status": "GENERATED",
+            "markdown_report": "# BÁO CÁO RÀ SOÁT TUÂN THỦ BẢO VỆ DỮ LIỆU CÁ NHÂN (NGHỊ ĐỊNH 13/2023/NĐ-CP)\n- **Mã báo cáo:** REP_5588\n- **Tên Dataset:** sample_pii.csv\n- **Mã chính sách đề xuất:** PROP_8003\n- **Đánh giá rủi ro chung:** HIGH RISK (Chứa dữ liệu y tế & CCCD)\n\n## 1. Kết quả Rà soát PII\n- Đã phát hiện các cột PII: `so_cccd` (HIGH), `so_dienthoai` (MEDIUM), `chan_doan` (HIGH).\n- Trạng thái phê duyệt DPO: Đã được DPO thẩm định quy tắc che dữ liệu.\n\n## 2. Phương án bảo vệ áp dụng\n- `so_cccd`: Áp dụng Hashing SHA-256.\n- `so_dienthoai`: Áp dụng MASK_MIDDLE (`0987***321`).\n- `chan_doan`: Gom nhóm danh mục chung.\n\n## 3. Khuyến nghị Tuân thủ\nTạo SQL View `v_sample_pii_masked` cho đội khai thác dữ liệu và phân quyền truy cập theo vai trò (RBAC).\n"
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_51",
+      "category": "edge_domain",
+      "title": "Add phone after email review",
+      "is_multiturn": true,
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "proposal_id: expected 'PROP_8004', got 'PROP_1001'"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Conversation context for a multi-turn eval.\nUse earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n- Earlier user turn 1: Quet PII pii_dataset.csv.\n- Earlier user turn 2: De xuat MASK_MIDDLE cho email.\n- Earlier user turn 3: Bo sung phone vao cung proposal.\n- Earlier user turn 4: DPO duyet tao view v_pii_email_phone.\n\nLatest user turn to answer now: Xac nhan."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "generate_masked_view",
+            "args": {
+              "dataset_name": "pii_dataset.csv",
+              "proposal_id": "PROP_8004",
+              "view_name": "v_pii_email_phone"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "generate_masked_view",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_pii_email_phone"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "generate_masked_view",
+          "args": {
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_pii_email_phone"
+          },
+          "result": {
+            "tool": "generate_masked_view",
+            "dataset_name": "pii_dataset.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_pii_email_phone",
+            "status": "CREATED_SUCCESSFULLY",
+            "sql_ddl": "CREATE VIEW v_pii_email_phone AS\nSELECT\n    patient_id,\n    full_name,\n    SHA256(so_cccd) AS so_cccd_hashed,\n    CONCAT(SUBSTR(so_dienthoai, 1, 4), '***', SUBSTR(so_dienthoai, 8)) AS so_dienthoai_masked,\n    email,\n    ngay_sinh,\n    nhom_mau,\n    chan_doan,\n    ma_bhyt\nFROM pii_dataset;"
+          }
+        }
+      ],
+      "assistant_text": null
+    },
+    {
+      "id": "SC_52",
+      "category": "edge_domain",
+      "title": "Legal audit masked view",
+      "is_multiturn": true,
+      "result": {
+        "passed": false,
+        "routing_correct": true,
+        "args_correct": false,
+        "failure_type": "wrong_arg_value",
+        "failures": [
+          "proposal_id: expected 'PROP_8005', got 'PROP_1001'"
+        ]
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": "Conversation context for a multi-turn eval.\nUse earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n- Earlier user turn 1: Quet sample_pii.csv.\n- Earlier user turn 2: Tra cuu Nghi dinh 13 ve danh tinh va vi tri dia ly.\n- Earlier user turn 3: De xuat MASK_MIDDLE email, phone va GENERALIZE job.\n- Earlier user turn 4: DPO duyet tao view v_sample_governed.\n\nLatest user turn to answer now: Xac nhan."
+        }
+      ],
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "generate_masked_view",
+            "args": {
+              "dataset_name": "sample_pii.csv",
+              "proposal_id": "PROP_8005",
+              "view_name": "v_sample_governed"
+            }
+          }
+        ]
+      },
+      "actual_tool_calls": [
+        {
+          "name": "generate_masked_view",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_sample_governed"
+          }
+        }
+      ],
+      "tool_results": [
+        {
+          "tool": "generate_masked_view",
+          "args": {
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_sample_governed"
+          },
+          "result": {
+            "tool": "generate_masked_view",
+            "dataset_name": "sample_pii.csv",
+            "proposal_id": "PROP_1001",
+            "view_name": "v_sample_governed",
+            "status": "CREATED_SUCCESSFULLY",
+            "sql_ddl": "CREATE VIEW v_sample_governed AS\nSELECT\n    patient_id,\n    full_name,\n    SHA256(so_cccd) AS so_cccd_hashed,\n    CONCAT(SUBSTR(so_dienthoai, 1, 4), '***', SUBSTR(so_dienthoai, 8)) AS so_dienthoai_masked,\n    email,\n    ngay_sinh,\n    nhom_mau,\n    chan_doan,\n    ma_bhyt\nFROM sample_pii;"
+          }
+        }
+      ],
+      "assistant_text": null
+    }
+  ]
+}

@@ -2,6 +2,18 @@
 
 **Làm nhóm · K4 Level 3B · Trợ lý AI theo lĩnh vực tự chọn.** Mỗi thành viên tự nộp cùng URL repo nhóm trên VLearn. Repo bài nộp dùng tên `K4-L3-DAY04-HoVaTen-MSSV-PromptEngineeringToolCalling`; khai báo thành viên và đóng góp trong [TEAM.md](TEAM.md).
 
+## Chạy PrivacyGuard web
+
+```bash
+python3 starter_v0/run_web.py
+```
+
+```bash
+cd web && npm install && npm run dev
+```
+
+Mở `http://localhost:3000`. Backend dùng OpenRouter với `openai/gpt-4.1-mini` khi `OPENROUTER_API_KEY` có trong `starter_v0/.env`.
+
 ## Bài lab này làm gì?
 
 Nhóm nhận starter IT Helpdesk có agent loop, tool và dữ liệu công ty **giả lập**, làm mẫu để xây trợ lý cho lĩnh vực tự chọn. Trợ lý cần hiểu yêu cầu như kiểm tra email/VPN, xem tình trạng một máy, tìm hướng dẫn nội bộ, hoặc tạo ticket sau khi đã được xác nhận.

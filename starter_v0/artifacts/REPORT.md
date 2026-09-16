@@ -50,10 +50,10 @@ total_cases`, và tool result error đã được review thủ công.
 
 | Version | Prompt/tool change | Hypothesis | Metric | Before | After | Run file |
 |---|---|---|---|---:|---:|---|
-| v0 | Runnable weak baseline; no v1 optimization | Establish a measured reference before controlled improvements | case / routing / argument / multiturn accuracy; provider errors | N/A | 0.3654 / 0.6832 / 0.4851 / 0.0; 0 errors | `starter_v0/runs/v0_privacyguard_groq_20260916T092840896612.json` |
-| v1 |  |  |  |  |  |  |
-| v2 |  |  |  |  |  |  |
-| v3 |  |  |  |  |  |  |
+| v0 | Aligned evaluator base reference; frozen v0 artifacts | Establish comparable OpenRouter reference | case / routing / argument / multiturn accuracy; provider errors | N/A | 0.4667 / 0.6667 / 0.4667 / 0.4; 0 errors | `starter_v0/runs/v0_privacyguard_openrouter_20260916T113820286060.json` |
+| v1 | Routing and argument boundaries | Improve routing/argument extraction | case / routing / argument / multiturn accuracy; provider errors | 0.4667 / 0.6667 / 0.4667 / 0.4 | 0.5333 / 0.7 / 0.5333 / 0.5; 0 errors | `starter_v0/runs/v1_privacyguard_openrouter_20260916T113905413715.json` |
+| v2 | Multi-turn context and confirmation guidance | Improve latest-turn handling | case / routing / argument / multiturn accuracy; provider errors | 0.5333 / 0.7 / 0.5333 / 0.5 | 0.6 / 0.8333 / 0.6 / 0.5; 0 errors | `starter_v0/runs/v2_privacyguard_openrouter_20260916T113948236935.json` |
+| v3 | Safety and governance guidance | Measure safety refinement without mixing separate safety run into base metrics | case / routing / argument / multiturn accuracy; provider errors | 0.6 / 0.8333 / 0.6 / 0.5 | 0.5333 / 0.7333 / 0.5333 / 0.5; 0 errors; adversarial 6/12 | `starter_v0/runs/v3_privacyguard_openrouter_20260916T114034336389.json`; `starter_v0/runs/v3-adversarial_privacyguard_openrouter_20260916T114108591126.json`; `starter_v0/runs/v3-group_privacyguard_openrouter_20260916T114124160162.json` |
 
 ## B2. Failure analysis
 
