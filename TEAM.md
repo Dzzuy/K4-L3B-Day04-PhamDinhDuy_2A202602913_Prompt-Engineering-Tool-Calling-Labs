@@ -50,7 +50,7 @@ Sao chép mục này cho từng thành viên.
 - **Quyết định, khó khăn và cách xử lý:** Đặt Human Confirmation Gate trước mọi WRITE action, invalid hóa confirmation khi dataset/column/strategy thay đổi, và kiểm soát Zero Raw PII Exposure trong output, preview và audit report.
 - **Điều đã học:** Cần kiểm thử riêng routing tool, trạng thái hội thoại nhiều lượt và ranh giới giữa READ với WRITE; kết quả tool-call chỉ được xem là đạt khi đồng thời đúng tool, đúng scope và đúng điều kiện an toàn.
 - **AI/công cụ đã dùng và cách kiểm tra:** Sử dụng GitHub Copilot trong VS Code để hỗ trợ soạn thảo và kiểm tra cấu trúc; tự kiểm tra bằng lệnh `python tests/validate_ba_scenarios.py` và đối chiếu số lượng 52 scenarios theo category.
-- **Thời điểm đã tự nộp URL repo chung trên VLearn:** Cập nhật sau khi nhóm chốt URL repo và commit nộp bài.
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:56:19 16/9/2026
 
 ### Phạm Đình Duy — 2A202602913
 
@@ -88,7 +88,7 @@ Sao chép mục này cho từng thành viên.
     - live run `starter_v0/run_pii_eval.py` với Groq `openai/gpt-oss-20b`
   - Validator hiện xác nhận 52 scenarios: 20 base single-turn, 10 base multi-turn, 12 adversarial và 10 edge-domain.
   - Live provider evaluation đã hoàn tất với `provider_error_cases == 0`; v0 baseline được freeze theo run evidence đã ghi.
-- **Thời điểm đã tự nộp URL repo chung trên VLearn:** Cập nhật sau khi nhóm chốt bản nộp.
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:56:19 16/9/2026
 
 ### Võ Trường An — 2A20262656
 
@@ -101,7 +101,7 @@ Sao chép mục này cho từng thành viên.
 - **Quyết định, khó khăn và cách xử lý:** Tách phần giao diện và backend web khỏi core agent để có thể tích hợp với phiên bản agent cuối mà không làm thay đổi prompt/evaluation.
 - **Điều đã học:** Hiểu rõ hơn cách kết nối frontend với AI backend và cách biểu diễn tool result, dataset analysis và masking workflow trên UI.
 - **AI/công cụ đã dùng và cách kiểm tra:** Phát triển và kiểm tra giao diện/web integration trên branch riêng trước khi merge vào branch nộp bài.
-- **Thời điểm đã tự nộp URL repo chung trên VLearn:** Cập nhật sau khi nhóm chốt bản nộp.
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:56:19 16/9/2026
 
 ### Nguyễn Hữu Chương — 2A202602601
 
@@ -115,4 +115,4 @@ Sao chép mục này cho từng thành viên.
 - **Quyết định, khó khăn và cách xử lý:** Chuyển framework IT Helpdesk sang use case PII nhưng vẫn giữ cấu trúc tool-calling của starter để các thành viên khác có thể tiếp tục tích hợp và đánh giá.
 - **Điều đã học:** Hiểu cách thiết kế tool contract cho AI agent và cách chuyển một starter agent sang domain dữ liệu riêng.
 - **AI/công cụ đã dùng và cách kiểm tra:** Kiểm tra thông qua tool declarations, agent flow và commit v0 baseline trên branch cá nhân.
-- **Thời điểm đã tự nộp URL repo chung trên VLearn:** Cập nhật sau khi nhóm chốt bản nộp.
+- **Thời điểm đã tự nộp URL repo chung trên VLearn:** 11:56:19 16/9/2026
