@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import uuid
+from datetime import datetime
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -26,6 +27,7 @@ app.add_middleware(
 )
 
 SESSIONS: dict[str, list[dict[str, str]]] = {}
+CONVERSATIONS: dict[str, dict[str, Any]] = {}
 
 SETTINGS_STORE: dict[str, Any] = {
     "aiProvider": "OpenRouter",
@@ -51,6 +53,15 @@ class MaskRequest(BaseModel):
 class ApplyPolicyRequest(BaseModel):
     dataset_id: str
     policy: dict[str, str] = Field(default_factory=dict)
+
+
+class ConversationCreateRequest(BaseModel):
+    file_id: str
+    title: str = "Đoạn chat mới"
+
+
+class ConversationMessageRequest(BaseModel):
+    message: str
 
 
 def _read_csv(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
@@ -89,6 +100,21 @@ def list_datasets() -> list[dict[str, Any]]:
             "created_at": ds.created_at.strftime("%Y-%m-%d %H:%M"),
         })
     return out
+
+
+@app.get("/api/datasets/available")
+def list_available_datasets() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": item["id"],
+            "name": item["filename"],
+            "filename": item["filename"],
+            "records": item["records"],
+            "cols": item["col_count"],
+            "columns": (STORE.get(item["id"]).columns if STORE.get(item["id"]) else []),
+        }
+        for item in list_datasets()
+    ]
 
 
 @app.get("/api/dataset/{dataset_id}")
@@ -166,6 +192,10 @@ async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
         "risk": dataset.risk,
         "status": dataset.status,
         "pii_count": pii_count,
+        # Compatibility aliases for the chat-centered frontend.
+        "file_id": dataset.dataset_id,
+        "column_count": len(columns),
+        "sample_rows": rows[:5],
     }
 
 
@@ -236,6 +266,93 @@ def chat(body: ChatRequest) -> dict[str, Any]:
         "session_id": session_id,
         **current_version(),
     }
+
+
+def _conversation_payload(conversation: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": conversation["id"],
+        "title": conversation["title"],
+        "file_id": conversation["file_id"],
+        "created_at": conversation["created_at"],
+        "updated_at": conversation["updated_at"],
+        "messages": conversation["messages"],
+    }
+
+
+def _create_conversation(file_id: str, title: str) -> dict[str, Any]:
+    if STORE.get(file_id) is None:
+        raise HTTPException(status_code=404, detail="Dataset not found.")
+    now = datetime.now().isoformat(timespec="seconds")
+    conversation = {
+        "id": f"conv_{uuid.uuid4().hex[:10]}",
+        "title": title,
+        "file_id": file_id,
+        "created_at": now,
+        "updated_at": now,
+        "messages": [],
+    }
+    CONVERSATIONS[conversation["id"]] = conversation
+    return conversation
+
+
+@app.get("/api/conversations")
+def list_conversations() -> list[dict[str, Any]]:
+    if not CONVERSATIONS:
+        datasets = list_datasets()
+        if datasets:
+            first = datasets[0]
+            _create_conversation(first["id"], f"Phân tích {first['filename']}")
+    return [_conversation_payload(item) for item in CONVERSATIONS.values()]
+
+
+@app.post("/api/conversations")
+def create_conversation(body: ConversationCreateRequest) -> dict[str, Any]:
+    return _conversation_payload(_create_conversation(body.file_id, body.title))
+
+
+@app.get("/api/conversations/{conversation_id}")
+def get_conversation(conversation_id: str) -> dict[str, Any]:
+    conversation = CONVERSATIONS.get(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return _conversation_payload(conversation)
+
+
+@app.post("/api/conversations/{conversation_id}/chat")
+def chat_in_conversation(conversation_id: str, body: ConversationMessageRequest) -> dict[str, Any]:
+    conversation = CONVERSATIONS.get(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    payload = chat(ChatRequest(
+        dataset_id=conversation["file_id"],
+        message=body.message,
+        session_id=conversation_id,
+    ))
+    tool_events = [
+        {
+            "tool": event.get("step", "unknown"),
+            "status": event.get("status", "unknown"),
+            "args": event.get("args", {}),
+            "result": event.get("result"),
+            "detail": event.get("detail"),
+        }
+        for event in payload.get("agent_trace", [])
+    ]
+    timestamp = datetime.now().strftime("%H:%M")
+    conversation["messages"].extend([
+        {"id": f"m_{uuid.uuid4().hex[:10]}", "sender": "user", "text": body.message, "time": timestamp},
+        {
+            "id": f"m_{uuid.uuid4().hex[:10]}",
+            "sender": "agent",
+            "text": payload["response_text"],
+            "time": timestamp,
+            "tools": tool_events,
+            "requiresApproval": bool(payload.get("confirmation_token")),
+        },
+    ])
+    conversation["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    return {"conversation": _conversation_payload(conversation), "agent_result": payload}
 
 
 @app.post("/api/mask")
