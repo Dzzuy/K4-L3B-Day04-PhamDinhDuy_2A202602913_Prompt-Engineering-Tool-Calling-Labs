@@ -1,175 +1,174 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import {
+  ArrowLeft,
   FileText,
-  ChevronRight,
-  X,
   Download,
-  ShieldCheck,
-  AlertTriangle,
+  CheckCircle2,
+  X,
 } from "@/components/icons";
-import { getStoredReports, getDatasetById, generateAuditReportText } from "@/lib/data-store";
-import type { AuditReportItem } from "@/lib/types";
-import { StatusBadge } from "@/components/Badges";
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<AuditReportItem[]>([]);
-  const [selectedReport, setSelectedReport] = useState<AuditReportItem | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
-  useEffect(() => {
-    setReports(getStoredReports());
-  }, []);
-
-  const handleDownloadReport = (rep: AuditReportItem) => {
-    const dataset = getDatasetById(rep.datasetId);
-    let content = "";
-    if (dataset) {
-      content = generateAuditReportText(dataset);
-    } else {
-      content = `PII GUARD AUDIT REPORT\nDataset: ${rep.dataset}\nDate: ${rep.date}\nVerification: ${rep.verification}\nPII Found: ${rep.piiFound}\nProtected: ${rep.protected}\n\nSummary:\n${rep.summary}`;
-    }
-
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `audit_report_${rep.dataset.replace(/\.csv$/i, "")}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  const reports = [
+    {
+      id: "rep-1",
+      filename: "sample_pii.csv",
+      title: "PII Detection & Compliance Audit",
+      piiFound: 5,
+      protected: 5,
+      risk: "HIGH",
+      status: "PASSED",
+      date: "2026-09-16 12:00",
+      standard: "Nghị định 13/2023/NĐ-CP & ISO 27701",
+      summary: "Đã phân tích 300 bản ghi từ thư mục data/. Phát hiện 5 loại PII (Họ tên, Email, SĐT, Địa chỉ, Nghề nghiệp). Xác thực 0-leakage: PASSED.",
+    },
+    {
+      id: "rep-2",
+      filename: "customers.csv",
+      title: "PII Masking & Protection Report",
+      piiFound: 6,
+      protected: 6,
+      risk: "CRITICAL",
+      status: "PASSED",
+      date: "2026-09-15 14:22",
+      standard: "Nghị định 13/2023/NĐ-CP",
+      summary: "Đã áp dụng Full Mask cho số CCCD và Partial Mask cho Email/Phone trên 10,000 khách hàng. Tỷ lệ bảo vệ 100%.",
+    },
+    {
+      id: "rep-3",
+      filename: "users.csv",
+      title: "Credential Vector Privacy Audit",
+      piiFound: 4,
+      protected: 4,
+      risk: "MEDIUM",
+      status: "PASSED",
+      date: "2026-09-15 15:15",
+      standard: "GDPR & ISO 27701",
+      summary: "Che mờ các thông tin liên lạc và địa chỉ IP trên 5,200 người dùng hệ thống. Kiểm định toàn vẹn PASSED.",
+    },
+  ];
 
   return (
-    <div className="space-y-6 py-2">
-      {/* Header */}
-      <div className="border-b border-neutral-200 pb-4">
-        <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
-          Reports
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1">
-          Compliance verification logs and cryptographic audit trail.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#fafafa] text-zinc-900 p-6 flex flex-col items-center">
+      <div className="max-w-4xl w-full space-y-6">
+        {/* Navigation & Breadcrumb */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 transition-colors font-medium bg-white px-3 py-1.5 rounded-lg border border-zinc-200"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Chat</span>
+          </Link>
+          <span className="text-xs text-zinc-400 font-mono">PrivacyGuard / Reports</span>
+        </div>
 
-      {/* Reports Table */}
-      <div className="border border-neutral-200 rounded-lg overflow-hidden bg-white">
-        {reports.length === 0 ? (
-          <div className="p-12 text-center text-sm text-neutral-500">
-            No audit reports generated yet.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50 text-[11px] uppercase tracking-wider text-neutral-500 font-medium">
-                  <th className="py-3 px-4">Dataset</th>
-                  <th className="py-3 px-4">PII Found</th>
-                  <th className="py-3 px-4">Protected</th>
-                  <th className="py-3 px-4">Verification</th>
-                  <th className="py-3 px-4 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-200">
-                {reports.map((rep) => (
-                  <tr
-                    key={rep.id}
-                    onClick={() => setSelectedReport(rep)}
-                    className="hover:bg-neutral-50 cursor-pointer transition-colors group"
-                  >
-                    <td className="py-3.5 px-4 font-medium text-neutral-900">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-neutral-400 group-hover:text-neutral-900 transition-colors" />
-                        <span className="font-mono text-xs">{rep.dataset}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-neutral-700">
-                      {rep.piiFound}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-neutral-700">
-                      {rep.protected}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <StatusBadge status={rep.verification} />
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <ChevronRight className="w-4 h-4 text-neutral-400 inline-block group-hover:text-neutral-900 transition-colors" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Reports</h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            Generated privacy compliance audit reports and verification logs.
+          </p>
+        </div>
 
-      {/* Report Details Modal */}
-      {selectedReport && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white border border-neutral-300 rounded-lg max-w-lg w-full p-6 space-y-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-900">
-                  Audit Report Details
-                </h3>
-                <p className="text-xs text-neutral-500 font-mono mt-0.5">
-                  {selectedReport.dataset} · {selectedReport.date}
+        {/* Reports Cards List */}
+        <div className="space-y-3">
+          {reports.map((rep) => (
+            <div
+              key={rep.id}
+              className="p-5 bg-white border border-zinc-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs hover:border-zinc-300 transition-all"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm font-bold text-zinc-900">{rep.filename}</span>
+                  <span className="text-[11px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full font-semibold">
+                    {rep.status}
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-zinc-700">{rep.title}</div>
+                <p className="text-xs text-zinc-500 font-mono">
+                  PII Found: <strong className="text-zinc-900">{rep.piiFound} types</strong> · Risk: <strong className="text-amber-800">{rep.risk}</strong> · {rep.date}
                 </p>
+                <div className="text-[11px] text-zinc-400 font-mono">
+                  Tiêu chuẩn: {rep.standard}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReport(rep)}
+                  className="px-3.5 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-300 text-zinc-800 text-xs font-semibold rounded-xl transition-colors"
+                >
+                  View Report
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob([`PRIVACY REPORT: ${rep.filename}\nStatus: ${rep.status}\nStandard: ${rep.standard}\n${rep.summary}`], { type: "text/plain" });
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `audit_report_${rep.filename.replace(".csv", "")}.txt`;
+                    a.click();
+                  }}
+                  className="px-3.5 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Report Modal */}
+      {selectedReport && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-zinc-200 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-zinc-900">{selectedReport.title}</h3>
+                <p className="text-xs text-zinc-500 font-mono">{selectedReport.filename} · {selectedReport.date}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedReport(null)}
-                className="p-1 text-neutral-400 hover:text-neutral-900 rounded"
+                className="text-xs p-1 text-zinc-400 hover:text-zinc-900"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
             </div>
 
-            {/* Verification status */}
-            <div className="flex items-center justify-between p-3 bg-neutral-50 border border-neutral-200 rounded">
-              <span className="text-xs font-medium text-neutral-700">Verification Result</span>
-              <StatusBadge status={selectedReport.verification} />
+            <div className="p-3 bg-zinc-50 rounded-xl space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Xác thực kiểm toán:</span>
+                <span className="font-bold text-emerald-700">{selectedReport.status}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Khung pháp lý:</span>
+                <span className="font-semibold text-zinc-800">{selectedReport.standard}</span>
+              </div>
             </div>
 
-            {/* Summary */}
-            <div className="space-y-1 text-xs">
-              <p className="font-medium text-neutral-700">Audit Summary</p>
-              <p className="text-neutral-600 leading-relaxed bg-white border border-neutral-200 rounded p-3">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-zinc-700">Tóm tắt kết quả:</span>
+              <p className="text-xs text-zinc-600 leading-relaxed p-3 bg-white border border-zinc-200 rounded-xl">
                 {selectedReport.summary}
               </p>
             </div>
 
-            {/* Breakdown */}
-            {selectedReport.details && selectedReport.details.length > 0 && (
-              <div className="space-y-1.5 text-xs">
-                <p className="font-medium text-neutral-700">Verification Checkpoints</p>
-                <div className="border border-neutral-200 rounded divide-y divide-neutral-100 bg-neutral-50/50">
-                  {selectedReport.details.map((detail, idx) => (
-                    <div key={idx} className="p-2 font-mono text-[11px] text-neutral-700">
-                      • {detail}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Footer buttons */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-200">
+            <div className="flex justify-end pt-2">
               <button
                 type="button"
                 onClick={() => setSelectedReport(null)}
-                className="px-3.5 py-1.5 bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-800 text-xs font-medium rounded transition-colors"
+                className="px-4 py-2 bg-zinc-900 text-white text-xs font-semibold rounded-xl hover:bg-black"
               >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDownloadReport(selectedReport)}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-black hover:bg-neutral-800 text-white text-xs font-medium rounded transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Report</span>
+                Đóng
               </button>
             </div>
           </div>

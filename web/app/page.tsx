@@ -1,5 +1,5 @@
-import AnalyzeView from "@/components/AnalyzeView";
+import ChatAgentView from "@/components/ChatAgentView";
 
 export default function RootPage() {
-  return <AnalyzeView />;
+  return <ChatAgentView />;
 }

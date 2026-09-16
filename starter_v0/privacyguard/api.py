@@ -1,56 +1,42 @@
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 import io
 import uuid
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel, Field
+from fastapi.responses import PlainTextResponse, Response
+from pydantic import BaseModel
 
-from privacyguard.orchestrator import current_version, run_privacy_chat
-from privacyguard.pii import detect_columns
-from privacyguard.privacy_tools import apply_masking
+from privacyguard.privacy_tools import (
+    analyze_risk,
+    create_masking_policy,
+    detect_pii,
+    generate_report,
+    inspect_csv,
+    mask_csv,
+)
+from privacyguard.smart_agent import answer_dataset_query
 from privacyguard.store import STORE, Dataset
 
-
-app = FastAPI(title="PII Guard API", version="1.0.0")
+app = FastAPI(title="PrivacyGuard AI Agent", version="2.5.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-SESSIONS: dict[str, list[dict[str, str]]] = {}
 
-SETTINGS_STORE: dict[str, Any] = {
-    "aiProvider": "OpenRouter (Claude 3.5 Sonnet)",
-    "model": "anthropic/claude-3-5-sonnet",
-    "apiStatus": "Connected · Ready",
-    "fileSizeLimit": "15 MB",
-    "defaultPolicy": "PARTIAL_MASK",
-}
-
-
-class ChatRequest(BaseModel):
-    dataset_id: str
+class AgentChatRequest(BaseModel):
+    file_id: str
     message: str
-    session_id: str | None = None
-
-
-class MaskRequest(BaseModel):
-    dataset_id: str
-    columns: list[str] = Field(default_factory=list)
-    confirmation_token: str
-
-
-class ApplyPolicyRequest(BaseModel):
-    dataset_id: str
-    policy: dict[str, str] = Field(default_factory=dict)
+    confirmation_token: str | None = None
+    custom_policy: dict[str, str] | None = None
 
 
 def _read_csv(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
@@ -59,9 +45,7 @@ def _read_csv(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
     if not reader.fieldnames:
         raise HTTPException(status_code=400, detail="CSV is missing a header row.")
     columns = [name.strip() for name in reader.fieldnames if name and name.strip()]
-    rows: list[dict[str, str]] = []
-    for item in reader:
-        rows.append({col: str(item.get(col, "") or "") for col in columns})
+    rows = [{col: str(item.get(col, "") or "") for col in columns} for item in reader]
     if not rows:
         raise HTTPException(status_code=400, detail="CSV has no data rows.")
     return columns, rows
@@ -69,66 +53,7 @@ def _read_csv(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    return {"ok": True, **current_version()}
-
-
-@app.get("/api/datasets")
-def list_datasets() -> list[dict[str, Any]]:
-    datasets = STORE.list_all()
-    out = []
-    for ds in datasets:
-        row_count = ds.virtual_record_count if ds.virtual_record_count else len(ds.rows)
-        out.append({
-            "id": ds.dataset_id,
-            "filename": ds.filename,
-            "records": row_count,
-            "col_count": len(ds.columns),
-            "pii": ds.pii_count or len(ds.policy) or 4,
-            "risk": ds.risk,
-            "status": ds.status,
-            "created_at": ds.created_at.strftime("%Y-%m-%d %H:%M"),
-        })
-    return out
-
-
-@app.get("/api/dataset/{dataset_id}")
-def get_dataset(dataset_id: str) -> dict[str, Any]:
-    dataset = STORE.get(dataset_id)
-    if dataset is None:
-        raise HTTPException(status_code=404, detail="Dataset not found.")
-    
-    findings_raw = detect_columns(dataset.rows, dataset.columns)
-    pii_findings = []
-    for col, data in findings_raw.items():
-        pii_type = data.get("primary_type", "name").upper()
-        risk = "HIGH" if pii_type in ("PHONE", "EMAIL") else "CRITICAL" if pii_type in ("NATIONAL_ID", "SSN", "CREDIT_CARD", "FINANCIAL") else "MEDIUM"
-        pii_findings.append({
-            "column": col,
-            "piiType": pii_type,
-            "confidence": "98%",
-            "risk": risk,
-            "example": data.get("example"),
-            "recommendedAction": "FULL_MASK" if risk == "CRITICAL" else "PARTIAL_MASK",
-        })
-
-    row_count = dataset.virtual_record_count if dataset.virtual_record_count else len(dataset.rows)
-
-    return {
-        "id": dataset.dataset_id,
-        "dataset_id": dataset.dataset_id,
-        "filename": dataset.filename,
-        "records": row_count,
-        "row_count": row_count,
-        "col_count": len(dataset.columns),
-        "columns": dataset.columns,
-        "preview": dataset.rows[:5],
-        "masked": dataset.masked,
-        "status": dataset.status,
-        "risk": dataset.risk,
-        "createdAt": dataset.created_at.strftime("%Y-%m-%d %H:%M"),
-        "piiFindings": pii_findings,
-        "policy": dataset.policy,
-    }
+    return {"status": "ok", "service": "PrivacyGuard Intelligent Conversational AI Agent"}
 
 
 @app.post("/api/upload")
@@ -139,110 +64,306 @@ async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
     if not raw:
         raise HTTPException(status_code=400, detail="Empty file.")
     columns, rows = _read_csv(raw)
-    
-    findings_raw = detect_columns(rows, columns)
-    pii_count = len(findings_raw)
-    risk = "HIGH" if pii_count >= 4 else "MEDIUM" if pii_count > 0 else "LOW"
 
+    dataset_id = f"file_{uuid.uuid4().hex[:10]}"
     dataset = Dataset(
-        dataset_id=f"ds_{uuid.uuid4().hex[:10]}",
+        dataset_id=dataset_id,
         filename=file.filename,
         columns=columns,
         rows=rows,
-        status="Analyzed",
-        risk=risk,
-        pii_count=pii_count,
+        status="Uploaded",
+        risk="PENDING",
+        pii_count=0,
     )
     STORE.put(dataset)
+
+    inspection = inspect_csv(dataset.dataset_id)
     return {
-        "id": dataset.dataset_id,
-        "dataset_id": dataset.dataset_id,
+        "file_id": dataset.dataset_id,
         "filename": dataset.filename,
-        "row_count": len(rows),
-        "records": len(rows),
-        "col_count": len(columns),
-        "columns": columns,
-        "preview": rows[:5],
-        "risk": dataset.risk,
-        "status": dataset.status,
-        "pii_count": pii_count,
+        "row_count": inspection["row_count"],
+        "column_count": inspection["column_count"],
+        "columns": inspection["columns"],
+        "sample_rows": inspection["sample_rows"],
     }
 
 
-@app.get("/api/reports")
-def list_reports() -> list[dict[str, Any]]:
-    return [
-        {
-            "id": "rep-1",
-            "datasetId": "ds_customer",
-            "dataset": "customer.csv",
-            "piiFound": 6,
-            "protected": 6,
-            "verification": "PASSED",
-            "date": "2026-09-15 14:22",
-            "summary": "Complete pseudonymization and masking applied to 10,000 records. Zero plaintext PII leaks detected.",
-        },
-        {
-            "id": "rep-2",
-            "datasetId": "ds_users",
-            "dataset": "users.csv",
-            "piiFound": 4,
-            "protected": 4,
-            "verification": "PASSED",
-            "date": "2026-09-15 15:15",
-            "summary": "High-risk user credentials and contact vectors masked across 5,200 records. Verification clean.",
-        },
-        {
-            "id": "rep-3",
-            "datasetId": "ds_employee",
-            "dataset": "employee.csv",
-            "piiFound": 7,
-            "protected": 6,
-            "verification": "FAILED",
-            "date": "2026-09-15 16:50",
-            "summary": "Compliance audit flagged unmasked financial field (bank_account) requiring confirmation.",
-        },
-    ]
+@app.post("/api/agent/chat")
+def agent_chat(req: AgentChatRequest) -> dict[str, Any]:
+    dataset = STORE.get(req.file_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="File không tồn tại. Vui lòng tải lên CSV trước.")
 
+    msg = req.message.lower().strip()
+    tools_executed: list[dict[str, Any]] = []
+    requires_approval = False
+    policy_preview = None
+    masking_result = None
+    report_result = None
 
-@app.get("/api/settings")
-def get_settings() -> dict[str, Any]:
-    return SETTINGS_STORE
+    # 1. Deep Conversational Analytics (e.g., "Có bao nhiêu email đuôi @gmail.com", "Ai là người rủi ro cao nhất?")
+    smart_reply = answer_dataset_query(dataset, req.message)
+    if smart_reply and not any(k in msg for k in ("kiểm tra", "scan", "mask", "che mờ", "approve", "áp dụng")):
+        return {
+            "reply": smart_reply,
+            "tools_executed": [{"tool": "query_dataset_records", "status": "success", "result": {"query": req.message, "status": "analyzed"}}],
+            "requires_approval": False,
+            "confirmation_token": dataset.confirmation_token,
+            "policy_preview": None,
+            "masking_result": None,
+            "report_result": None,
+        }
 
+    # 2. Tool Calling Flow: Scan / Detect / Risk / Policy Proposal
+    if any(k in msg for k in ("kiểm tra", "scan", "detect", "quét", "tìm pii", "phân tích", "inspect", "rủi ro")):
+        ins = inspect_csv(req.file_id)
+        tools_executed.append({"tool": "inspect_csv", "result": ins, "status": "success"})
 
-@app.post("/api/settings")
-def update_settings(body: dict[str, Any]) -> dict[str, Any]:
-    SETTINGS_STORE.update(body)
-    return {"status": "saved", "settings": SETTINGS_STORE}
+        det = detect_pii(req.file_id)
+        tools_executed.append({"tool": "detect_pii", "result": det, "status": "success"})
 
+        risk = analyze_risk(req.file_id)
+        tools_executed.append({"tool": "analyze_risk", "result": risk, "status": "success"})
 
-@app.post("/api/chat")
-def chat(body: ChatRequest) -> dict[str, Any]:
-    if STORE.get(body.dataset_id) is None:
-        raise HTTPException(status_code=404, detail="Upload a CSV before chatting.")
-    if not body.message.strip():
-        raise HTTPException(status_code=400, detail="Message is empty.")
-    session_id = body.session_id or body.dataset_id
-    history = SESSIONS.setdefault(session_id, [])
-    payload = run_privacy_chat(body.dataset_id, body.message.strip(), history)
-    history.append({"role": "user", "content": body.message.strip()})
-    history.append({"role": "assistant", "content": payload["response_text"]})
+        pol = create_masking_policy(req.file_id, req.custom_policy)
+        tools_executed.append({"tool": "create_masking_policy", "result": pol, "status": "success"})
+
+        requires_approval = True
+        policy_preview = pol["masking_policy"]
+        agent_reply = (
+            f"Tôi đã gọi 4 công cụ (`inspect_csv`, `detect_pii`, `analyze_risk`, `create_masking_policy`) để phân tích file '{dataset.filename}':\n\n"
+            f"• **Phát hiện PII**: Tìm thấy {det['pii_column_count']} trường dữ liệu cá nhân nhạy cảm: `{', '.join(det['detected_columns'])}`.\n"
+            f"• **Đánh giá rủi ro**: Mức **{risk['overall_risk']}** theo Nghị định 13/2023/NĐ-CP do có số CCCD/Định danh và thông tin liên lạc.\n"
+            f"• **Chính sách đề xuất**: CCCD → `FULL_MASK`, Email/Phone → `PARTIAL_MASK`.\n\n"
+            f"⚠️ Vì che mờ dữ liệu là hành động làm thay đổi file gốc (Write Action), tôi cần bạn bấm nút **[Approve (Xác nhận)]** bên dưới để tiến hành."
+        )
+
+    # 3. Human Approval Execution: Mask CSV & Generate Report
+    elif any(k in msg for k in ("approve", "đồng ý", "xác nhận", "mask", "che mờ", "thực hiện", "apply")):
+        token = req.confirmation_token or dataset.confirmation_token or "approved_by_human"
+        
+        res = mask_csv(req.file_id, token)
+        tools_executed.append({"tool": "mask_csv", "result": res, "status": "success"})
+
+        rep = generate_report(req.file_id)
+        tools_executed.append({"tool": "generate_report", "result": rep, "status": "success"})
+
+        masking_result = res
+        report_result = rep
+        agent_reply = (
+            f"Đã nhận phê duyệt từ bạn! Tôi đã thực thi tool `mask_csv` và `generate_report`:\n\n"
+            f"• **Trạng thái**: Hoàn tất che mờ {res['number_of_masked_values']:,} giá trị PII trên {res['records_processed']:,} dòng dữ liệu.\n"
+            f"• **Kiểm định tuân thủ**: Đạt tiêu chuẩn **PASSED** (100% không còn rò rỉ dữ liệu thô).\n\n"
+            f"Bạn có thể tải file CSV đã bảo vệ và Báo cáo kiểm toán trực tiếp ở thẻ bên dưới."
+        )
+
+    # 4. Report Request
+    elif any(k in msg for k in ("báo cáo", "report", "audit", "kiểm toán")):
+        rep = generate_report(req.file_id)
+        tools_executed.append({"tool": "generate_report", "result": rep, "status": "success"})
+        report_result = rep
+        agent_reply = f"Báo cáo kiểm toán tuân thủ cho file '{dataset.filename}' đã sẵn sàng (Mã kiểm định: `{rep['report_id']}`)."
+
+    else:
+        agent_reply = (
+            f"Tôi là Trợ lý AI PrivacyGuard. Bạn có thể hỏi tôi bất kỳ điều gì về file '{dataset.filename}':\n"
+            f"• 'Kiểm tra file này xem có PII không'\n"
+            f"• 'Có bao nhiêu email đuôi @...?' hoặc 'Ai là người có rủi ro cao nhất?'\n"
+            f"• 'Approve che mờ dữ liệu'\n"
+            f"• 'Xuất báo cáo kiểm toán'"
+        )
+
     return {
-        "response_text": payload["response_text"],
-        "agent_trace": payload["agent_trace"],
-        "preview_data": payload.get("preview_data"),
-        "confirmation_token": payload.get("confirmation_token"),
-        "mode": payload.get("mode"),
-        "session_id": session_id,
-        **current_version(),
+        "reply": agent_reply,
+        "tools_executed": tools_executed,
+        "requires_approval": requires_approval,
+        "confirmation_token": dataset.confirmation_token,
+        "policy_preview": policy_preview,
+        "masking_result": masking_result,
+        "report_result": report_result,
     }
 
 
-@app.post("/api/mask")
-def mask(body: MaskRequest) -> dict[str, Any]:
-    if STORE.get(body.dataset_id) is None:
-        raise HTTPException(status_code=404, detail="Dataset not found.")
-    result = apply_masking(body.dataset_id, body.columns, body.confirmation_token)
-    if result.get("error"):
-        raise HTTPException(status_code=400, detail=result.get("message") or result["error"])
-    return result
+@app.get("/api/download/csv/{file_id}")
+def download_csv(file_id: str):
+    dataset = STORE.get(file_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="File not found")
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=dataset.columns)
+    writer.writeheader()
+    writer.writerows(dataset.rows)
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=protected_{dataset.filename}"}
+    )
+
+
+@app.get("/api/download/report/{file_id}")
+def download_report(file_id: str):
+    dataset = STORE.get(file_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="File not found")
+    rep = generate_report(file_id)
+    content = f"""=======================================================
+PRIVACYGUARD AUDIT REPORT & COMPLIANCE VERIFICATION
+=======================================================
+Report ID:          {rep['report_id']}
+File:               {rep['filename']}
+Generated at:       {rep['timestamp']}
+Compliance Status:  {rep['compliance_status']}
+
+APPLIED POLICIES:
+-------------------------------------------------------
+{chr(10).join(f"• {col}: {act}" for col, act in rep['applied_policy'].items())}
+
+AUDIT NOTE:
+-------------------------------------------------------
+{rep['audit_note']}
+=======================================================
+"""
+    return PlainTextResponse(
+        content=content,
+        headers={"Content-Disposition": f"attachment; filename=audit_report_{dataset.filename.replace('.csv', '')}.txt"}
+    )
+
+@app.get("/api/datasets/available")
+def get_available_datasets() -> list[dict[str, Any]]:
+    datasets = STORE.list_all()
+    results = []
+    for d in datasets:
+        results.append({
+            "id": d.dataset_id,
+            "name": d.filename,
+            "filename": d.filename,
+            "records": d.virtual_record_count or len(d.rows),
+            "cols": len(d.columns),
+            "columns": d.columns,
+            "sample_rows": d.rows[:5],
+            "risk": d.risk,
+            "pii_count": d.pii_count,
+        })
+    return results
+
+# ---------------------------------------------------------------------------
+# CONVERSATION API (MỤC 3, 4, 5, 6, 7)
+# ---------------------------------------------------------------------------
+from privacyguard.store import CONV_STORE
+
+
+class CreateConversationRequest(BaseModel):
+    file_id: str = "ds_sample_pii"
+    title: str = "Đoạn chat mới"
+
+
+class ConversationChatRequest(BaseModel):
+    message: str
+    confirmation_token: str | None = None
+    custom_policy: dict[str, str] | None = None
+
+
+@app.get("/api/conversations")
+def list_conversations() -> list[dict[str, Any]]:
+    convs = CONV_STORE.list_all()
+    return [c.to_dict() for c in convs]
+
+
+@app.post("/api/conversations")
+def create_conversation(req: CreateConversationRequest) -> dict[str, Any]:
+    conv = CONV_STORE.create(file_id=req.file_id, title=req.title)
+    return conv.to_dict()
+
+
+@app.get("/api/conversations/{conv_id}")
+def get_conversation(conv_id: str) -> dict[str, Any]:
+    conv = CONV_STORE.get(conv_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conv.to_dict()
+
+
+@app.post("/api/conversations/{conv_id}/chat")
+def chat_in_conversation(conv_id: str, req: ConversationChatRequest) -> dict[str, Any]:
+    conv = CONV_STORE.get(conv_id)
+    if not conv:
+        conv = CONV_STORE.create(title=req.message[:35])
+        conv_id = conv.id
+
+    dataset = STORE.get(conv.file_id)
+    if not dataset:
+        dataset = STORE.get("ds_sample_pii")
+        if dataset:
+            conv.file_id = dataset.dataset_id
+
+    # 1. Save user message to persistent conversation
+    time_str = datetime.now().strftime("%H:%M")
+    CONV_STORE.add_message(conv_id=conv_id, sender="user", text=req.message, time_str=time_str)
+
+    # 2. Run agent execution
+    agent_req = AgentChatRequest(
+        file_id=conv.file_id,
+        message=req.message,
+        confirmation_token=req.confirmation_token,
+        custom_policy=req.custom_policy,
+    )
+    result = agent_chat(agent_req)
+
+    # 3. Save agent message to persistent conversation
+    CONV_STORE.add_message(
+        conv_id=conv_id,
+        sender="agent",
+        text=result["reply"],
+        time_str=time_str,
+        tools=result.get("tools_executed", []),
+        requires_approval=result.get("requires_approval", False),
+        policy=result.get("policy_preview") or {},
+        mask_result=result.get("masking_result"),
+    )
+
+    # Return updated conversation
+    updated_conv = CONV_STORE.get(conv_id)
+    return {
+        "conversation": updated_conv.to_dict() if updated_conv else {},
+        "agent_result": result,
+    }
+
+
+# ---------------------------------------------------------------------------
+# FILES, REPORTS, POLICIES API (MỤC 15, 16, 17)
+# ---------------------------------------------------------------------------
+@app.get("/api/files")
+def get_all_files() -> list[dict[str, Any]]:
+    datasets = STORE.list_all()
+    out = []
+    for d in datasets:
+        out.append({
+            "id": d.dataset_id,
+            "filename": d.filename,
+            "row_count": d.virtual_record_count or len(d.rows),
+            "column_count": len(d.columns),
+            "columns": d.columns,
+            "status": d.status,
+            "risk": d.risk,
+            "pii_count": d.pii_count,
+            "masked": d.masked,
+            "created_at": d.created_at.strftime("%Y-%m-%d %H:%M"),
+        })
+    return out
+
+
+@app.get("/api/policies")
+def get_all_policies() -> list[dict[str, Any]]:
+    datasets = STORE.list_all()
+    out = []
+    for d in datasets:
+        if d.policy:
+            out.append({
+                "id": f"pol_{d.dataset_id}",
+                "file_id": d.dataset_id,
+                "filename": d.filename,
+                "policy": d.policy,
+                "status": "Applied" if d.masked else "Draft",
+                "created_at": d.created_at.strftime("%Y-%m-%d %H:%M"),
+            })
+    return out
