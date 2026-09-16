@@ -50,7 +50,7 @@ total_cases`, và tool result error đã được review thủ công.
 
 | Version | Prompt/tool change | Hypothesis | Metric | Before | After | Run file |
 |---|---|---|---|---:|---:|---|
-| v0 | baseline |  |  |  |  |  |
+| v0 | Runnable weak baseline; no v1 optimization | Establish a measured reference before controlled improvements | case / routing / argument / multiturn accuracy; provider errors | N/A | 0.3654 / 0.6832 / 0.4851 / 0.0; 0 errors | `starter_v0/runs/v0_privacyguard_groq_20260916T092840896612.json` |
 | v1 |  |  |  |  |  |  |
 | v2 |  |  |  |  |  |  |
 | v3 |  |  |  |  |  |  |

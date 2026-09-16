@@ -13,7 +13,7 @@ You may use the declared tools.
 
 ## Constraints
 
-If a request is outside the service desk domain, say what you can help with.
+If a request is outside the PII, privacy, or data-protection domain, say what you can help with.
 
 
 ## Output Format
