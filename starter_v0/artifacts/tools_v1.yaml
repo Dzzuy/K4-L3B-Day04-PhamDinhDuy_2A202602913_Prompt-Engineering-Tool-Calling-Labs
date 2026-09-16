@@ -10,7 +10,7 @@ tools:
       required: [question]
 
   - name: scan_dataset_pii
-    description: "Quét và kiểm tra một file/bảng dữ liệu để phát hiện tất cả các cột chứa thông tin định danh cá nhân PII. Dùng khi nhận được yêu cầu quét PII, scan PII."
+    description: "Quét và kiểm tra một file/bảng dữ liệu để phát hiện tất cả các cột chứa thông tin định danh cá nhân PII (CCCD, SĐT, Email, Bệnh án, Tên, Địa chỉ...). Dùng khi nhận được yêu cầu quét PII, scan PII."
     parameters:
       type: object
       properties:
@@ -47,13 +47,13 @@ tools:
       required: [dataset_name, rules]
 
   - name: search_legal_compliance
-    description: "Tra cứu các điều khoản, nghĩa vụ pháp lý trong Nghị định 13/2023/NĐ-CP hoặc GDPR liên quan đến bảo vệ dữ liệu cá nhân, dữ liệu vị trí địa lý, danh tính."
+    description: "Tra cứu các điều khoản, nghĩa vụ pháp lý trong Nghị định 13/2023/NĐ-CP hoặc GDPR liên quan đến bảo vệ dữ liệu cá nhân, dữ liệu vị trí địa lý, danh tính. Dùng khi hỏi 'tra cứu pháp lý', 'Nghị định 13'."
     parameters:
       type: object
       properties:
-        query: {type: string, description: "Từ khóa hoặc nội dung pháp lý cần tra cứu"}
-        regulation: {type: string, default: "Nghi dinh 13/2023/ND-CP", description: "Tên văn bản pháp lý (mặc định: Nghi dinh 13/2023/ND-CP)"}
-      required: [query, regulation]
+        query: {type: string, description: "Từ khóa hoặc nội dung pháp lý cần tra cứu (ví dụ: nghĩa vụ bảo vệ dữ liệu cá nhân)"}
+        regulation: {type: string, default: "Nghị định 13/2023/NĐ-CP", description: "Tên văn bản pháp lý (mặc định: Nghị định 13/2023/NĐ-CP)"}
+      required: [query]
 
   - name: audit_data_access
     description: "Rà soát nhật ký truy cập (Access Log) của một dataset để kiểm tra các hành vi truy cập PII thô của tài khoản nội bộ hoặc bất thường. Dùng khi yêu cầu 'audit log', 'kiểm tra truy cập', 'rà soát log'."

@@ -1,0 +1,83 @@
+tools:
+  - name: clarify
+    description: "Gửi một câu hỏi cho người dùng/DPO để xin ý kiến phê duyệt hoặc bổ sung thông tin bị thiếu."
+    parameters:
+      type: object
+      properties:
+        question: {type: string, description: "Nội dung câu hỏi xin ý kiến hoặc phê duyệt"}
+        response_type: {type: string, enum: [text, yes_no, choice], default: "yes_no", description: "Kiểu phản hồi kỳ vọng"}
+        options: {type: array, default: [], items: {type: string}, description: "Danh sách lựa chọn nếu có"}
+      required: [question]
+
+  - name: scan_dataset_pii
+    description: "Quét một file/bảng dữ liệu để phát hiện các cột chứa thông tin định danh cá nhân PII (CCCD, SĐT, Email, Bệnh án...)."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu cần quét, ví dụ: patients.csv"}
+      required: [dataset_name]
+
+  - name: classify_pii_sensitivity
+    description: "Phân loại mức độ nhạy cảm của dữ liệu cá nhân (HIGH, MEDIUM, LOW) theo Nghị định 13/2023/NĐ-CP."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        columns:
+          type: array
+          items: {type: string}
+          description: "Danh sách tên các cột cần đánh giá rủi ro nhạy cảm"
+      required: [dataset_name, columns]
+
+  - name: propose_masking_policy
+    description: "Đề xuất quy tắc che/mã hóa dữ liệu phù hợp (HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE) cho các cột PII."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        rules:
+          type: array
+          description: "Danh sách quy tắc đề xuất cho từng cột"
+          items:
+            type: object
+            properties:
+              column: {type: string, description: "Tên cột cần che"}
+              action: {type: string, enum: [HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE], description: "Hành động che dữ liệu"}
+            required: [column, action]
+      required: [dataset_name, rules]
+
+  - name: search_legal_compliance
+    description: "Tra cứu các điều khoản pháp lý trong Nghị định 13/2023/NĐ-CP hoặc GDPR về bảo vệ dữ liệu cá nhân."
+    parameters:
+      type: object
+      properties:
+        query: {type: string, description: "Từ khóa hoặc nội dung pháp lý cần tra cứu, ví dụ: dữ liệu y tế nhạy cảm"}
+        regulation: {type: string, default: "Nghị định 13/2023/NĐ-CP", description: "Tên văn bản quy phạm pháp luật"}
+      required: [query]
+
+  - name: audit_data_access
+    description: "Rà soát lịch sử log truy cập (Access Log) để phát hiện các hành vi truy cập PII thô bất thường hoặc trái phép."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên dataset cần rà soát log truy cập"}
+      required: [dataset_name]
+
+  - name: generate_compliance_report
+    description: "Tổng hợp báo cáo tuân thủ rà soát bảo vệ dữ liệu cá nhân dạng Markdown để trình DPO hoặc Ban Giám đốc."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên file hoặc bảng dữ liệu"}
+        proposal_id: {type: string, description: "Mã bản thảo đề xuất chính sách, ví dụ: PROP_1001"}
+      required: [dataset_name, proposal_id]
+
+  - name: generate_masked_view
+    description: "Sinh câu lệnh SQL CREATE VIEW v_..._masked đã được che PII an toàn sau khi chính sách đã được DPO phê duyệt."
+    parameters:
+      type: object
+      properties:
+        dataset_name: {type: string, description: "Tên dataset gốc"}
+        proposal_id: {type: string, description: "Mã đề xuất đã được DPO phê duyệt"}
+        view_name: {type: string, description: "Tên SQL View mới cần sinh, ví dụ: v_patients_masked"}
+      required: [dataset_name, proposal_id, view_name]
