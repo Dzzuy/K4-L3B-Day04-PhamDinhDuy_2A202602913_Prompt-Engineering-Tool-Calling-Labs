@@ -1,6 +1,6 @@
 tools:
   - name: clarify
-    description: "Purpose: ask for genuinely missing information. USE WHEN a required argument for the intended tool is absent. DO NOT USE WHEN the request already contains all required arguments or is out of scope. Required arguments: question; use response_type and options only when appropriate."
+    description: "Gửi một câu hỏi cho người dùng/DPO để xin ý kiến phê duyệt hoặc bổ sung thông tin bị thiếu."
     parameters:
       type: object
       properties:
@@ -10,7 +10,7 @@ tools:
       required: [question]
 
   - name: scan_dataset_pii
-    description: "Purpose: initial discovery of PII columns in a dataset. USE WHEN the user asks what PII exists or asks to scan an identified dataset. DO NOT USE WHEN columns are already known and the request is only sensitivity classification, masking, legal research, reporting, or access audit. Required argument: dataset_name exactly as supplied."
+    description: "Quét một file/bảng dữ liệu để phát hiện các cột chứa thông tin định danh cá nhân PII (CCCD, SĐT, Email, Bệnh án...)."
     parameters:
       type: object
       properties:
@@ -18,7 +18,7 @@ tools:
       required: [dataset_name]
 
   - name: classify_pii_sensitivity
-    description: "Purpose: classify known columns as HIGH, MEDIUM, or LOW sensitivity. USE WHEN a dataset and the target columns are known and sensitivity is requested. DO NOT USE for initial PII discovery. Required arguments: dataset_name and columns, preserved exactly as supplied."
+    description: "Phân loại mức độ nhạy cảm của dữ liệu cá nhân (HIGH, MEDIUM, LOW) theo Nghị định 13/2023/NĐ-CP."
     parameters:
       type: object
       properties:
@@ -30,7 +30,7 @@ tools:
       required: [dataset_name, columns]
 
   - name: propose_masking_policy
-    description: "Purpose: propose masking rules for known PII columns. USE WHEN the user requests a masking strategy or action. DO NOT USE for scanning, classification, legal research, reports, or materializing a view. Required arguments: dataset_name and rules. Allowed actions only: HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE."
+    description: "Đề xuất quy tắc che/mã hóa dữ liệu phù hợp (HASH, MASK_MIDDLE, GENERALIZE, ANONYMIZE) cho các cột PII."
     parameters:
       type: object
       properties:
@@ -47,7 +47,7 @@ tools:
       required: [dataset_name, rules]
 
   - name: search_legal_compliance
-    description: "Purpose: look up privacy, legal, or regulation information. USE WHEN the request asks about Decree 13, GDPR, legal duties, or compliance rules. DO NOT USE for dataset scanning, sensitivity classification, masking, reports, views, or access logs. Required argument: query."
+    description: "Tra cứu các điều khoản pháp lý trong Nghị định 13/2023/NĐ-CP hoặc GDPR về bảo vệ dữ liệu cá nhân."
     parameters:
       type: object
       properties:
@@ -56,7 +56,7 @@ tools:
       required: [query]
 
   - name: audit_data_access
-    description: "Purpose: review access logs for who accessed a dataset or suspicious PII access. USE WHEN access history, actors, or suspicious access is requested. DO NOT USE for scanning columns, sensitivity classification, masking, legal research, reports, or views. Required argument: dataset_name."
+    description: "Rà soát lịch sử log truy cập (Access Log) để phát hiện các hành vi truy cập PII thô bất thường hoặc trái phép."
     parameters:
       type: object
       properties:
@@ -64,7 +64,7 @@ tools:
       required: [dataset_name]
 
   - name: generate_compliance_report
-    description: "Purpose: generate a compliance report from an existing proposal. USE WHEN report generation is explicitly requested and both identifiers are available. DO NOT USE to create a masked view or when proposal_id is missing; ask with clarify instead. Required arguments: dataset_name and proposal_id exactly as supplied; never invent proposal_id."
+    description: "Tổng hợp báo cáo tuân thủ rà soát bảo vệ dữ liệu cá nhân dạng Markdown để trình DPO hoặc Ban Giám đốc."
     parameters:
       type: object
       properties:
@@ -73,7 +73,7 @@ tools:
       required: [dataset_name, proposal_id]
 
   - name: generate_masked_view
-    description: "Purpose: materialize an existing masking proposal as a masked SQL view. USE WHEN a masked view is explicitly requested and all identifiers are available. DO NOT USE for proposing policy or reporting, or when dataset_name, proposal_id, or view_name is missing; ask with clarify instead. Required arguments: dataset_name, proposal_id, view_name exactly as supplied; never invent values."
+    description: "Sinh câu lệnh SQL CREATE VIEW v_..._masked đã được che PII an toàn sau khi chính sách đã được DPO phê duyệt."
     parameters:
       type: object
       properties:

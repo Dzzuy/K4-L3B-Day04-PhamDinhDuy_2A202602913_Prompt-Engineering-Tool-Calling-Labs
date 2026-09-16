@@ -39,9 +39,13 @@ def normalized(value: Any) -> Any:
     return value
 
 
-def arguments_match(expected: dict[str, Any], actual: dict[str, Any]) -> tuple[bool, list[str]]:
+def arguments_match(
+    expected: dict[str, Any], actual: dict[str, Any], *, ignored_keys: set[str] | None = None
+) -> tuple[bool, list[str]]:
     failures: list[str] = []
     for key, expected_value in expected.items():
+        if key in (ignored_keys or set()):
+            continue
         if normalized(actual.get(key)) != normalized(expected_value):
             failures.append(f"{key}: expected {expected_value!r}, got {actual.get(key)!r}")
     return not failures, failures
@@ -77,7 +81,10 @@ def evaluate_calls(expect: dict[str, Any], actual_calls: list[dict[str, Any]]) -
         best_call = same_name[0]
         best_failures: list[str] | None = None
         for candidate in same_name:
-            _, candidate_failures = arguments_match(expected_call.get("args", {}), candidate.get("args", {}))
+            ignored_keys = {"question"} if expected_call["name"] == "clarify" else set()
+            _, candidate_failures = arguments_match(
+                expected_call.get("args", {}), candidate.get("args", {}), ignored_keys=ignored_keys
+            )
             if best_failures is None or len(candidate_failures) < len(best_failures):
                 best_call, best_failures = candidate, candidate_failures
 
@@ -128,6 +135,30 @@ def validate_tool_contract(cases: list[dict[str, Any]], declarations: list[dict[
         )
 
 
+def case_messages(case: dict[str, Any]) -> list[dict[str, str]]:
+    if "turns" not in case:
+        return [{"role": "user", "content": case["prompt"]}]
+
+    turns = case["turns"]
+    previous = turns[:-1]
+    latest = turns[-1]["content"]
+    previous_text = "\n".join(
+        f"- Earlier {item.get('role', 'user')} turn {index + 1}: {item['content']}"
+        for index, item in enumerate(previous)
+    )
+    content = (
+        "Conversation context for a multi-turn eval.\n"
+        "Use earlier turns only as context. Do not answer earlier turns and do not call tools for them.\n\n"
+        f"{previous_text}\n\n"
+        f"Latest user turn to answer now: {latest}"
+    )
+    return [{"role": "user", "content": content}]
+
+
+def case_expect(case: dict[str, Any]) -> dict[str, Any]:
+    return case["turns"][-1]["expect"] if "turns" in case else case["expect"]
+
+
 def evaluate_case(
     case: dict[str, Any],
     *,
@@ -136,63 +167,49 @@ def evaluate_case(
     tools: list[dict[str, Any]],
     model: str | None,
 ) -> dict[str, Any]:
-    turns = case.get("turns") or [{"role": "user", "content": case["prompt"], "expect": case["expect"]}]
-    history: list[dict[str, str]] = []
-    turn_results: list[dict[str, Any]] = []
-
-    for index, turn in enumerate(turns, start=1):
-        user_message = {"role": "user", "content": turn["content"]}
-        try:
-            agent = HelpdeskAgent(provider, system_prompt=system_prompt, tools=tools, model=model)
-            run = agent.run([*history, user_message], tool_choice=None)
-            actual_calls = [{"name": call.name, "args": call.args} for call in run.tool_calls]
-            scored = evaluate_calls(turn["expect"], actual_calls)
-            turn_result = {
-                "turn_index": index,
-                "user": turn["content"],
-                "expect": turn["expect"],
-                "actual_tool_calls": actual_calls,
-                "tool_results": run.tool_results,
-                "assistant_text": run.text,
-                **scored,
-            }
-            history.extend([user_message, {"role": "assistant", "content": run.text or ""}])
-        except Exception as exc:
-            turn_result = {
-                "turn_index": index,
-                "user": turn["content"],
-                "expect": turn["expect"],
-                "actual_tool_calls": [],
-                "tool_results": [],
-                "assistant_text": None,
+    expect = case_expect(case)
+    messages = case_messages(case)
+    try:
+        agent = HelpdeskAgent(provider, system_prompt=system_prompt, tools=tools, model=model)
+        tool_choice = None if expect.get("no_tool") else "required"
+        run = agent.run(messages, tool_choice=tool_choice)
+        actual_calls = [{"name": call.name, "args": call.args} for call in run.tool_calls]
+        scored = evaluate_calls(expect, actual_calls)
+        return {
+            "id": case["id"],
+            "category": case["category"],
+            "title": case["title"],
+            "is_multiturn": "turns" in case,
+            "result": scored,
+            "messages": messages,
+            "expect": expect,
+            "actual_tool_calls": actual_calls,
+            "tool_results": run.tool_results,
+            "assistant_text": run.text,
+        }
+    except Exception as exc:
+        return {
+            "id": case["id"],
+            "category": case["category"],
+            "title": case["title"],
+            "is_multiturn": "turns" in case,
+            "result": {
                 "passed": False,
                 "routing_correct": False,
                 "args_correct": False,
                 "failure_type": "provider_error",
                 "failures": [f"{type(exc).__name__}: {exc}"],
-            }
-        turn_results.append(turn_result)
-
-    provider_error = any(turn["failure_type"] == "provider_error" for turn in turn_results)
-    failure_types = [turn["failure_type"] for turn in turn_results if turn["failure_type"]]
-    return {
-        "id": case["id"],
-        "category": case["category"],
-        "title": case["title"],
-        "is_multiturn": "turns" in case,
-        "result": {
-            "passed": all(turn["passed"] for turn in turn_results),
-            "routing_correct": all(turn["routing_correct"] for turn in turn_results),
-            "args_correct": all(turn["args_correct"] for turn in turn_results),
-            "failure_type": "provider_error" if provider_error else (failure_types[0] if failure_types else None),
-        },
-        "turn_results": turn_results,
-    }
+            },
+            "messages": messages,
+            "expect": expect,
+            "actual_tool_calls": [],
+            "tool_results": [],
+            "assistant_text": None,
+        }
 
 
 def summarize(results: list[dict[str, Any]]) -> dict[str, Any]:
     measured = [item for item in results if item["result"]["failure_type"] != "provider_error"]
-    turns = [turn for item in measured for turn in item["turn_results"]]
     multi = [item for item in measured if item["is_multiturn"]]
     base_multi = [item for item in multi if item["category"] == "base_multi"]
     adversarial = [item for item in measured if item["category"] == "adversarial"]
@@ -203,21 +220,21 @@ def summarize(results: list[dict[str, Any]]) -> dict[str, Any]:
         "provider_error_cases": len(results) - len(measured),
         "passed_cases": sum(item["result"]["passed"] for item in measured),
         "case_accuracy": round(sum(item["result"]["passed"] for item in measured) / len(measured), 4) if measured else 0.0,
-        "tool_routing_accuracy": round(sum(turn["routing_correct"] for turn in turns) / len(turns), 4) if turns else 0.0,
-        "argument_accuracy": round(sum(turn["args_correct"] for turn in turns) / len(turns), 4) if turns else 0.0,
+        "tool_routing_accuracy": round(sum(item["result"]["routing_correct"] for item in measured) / len(measured), 4) if measured else 0.0,
+        "argument_accuracy": round(sum(item["result"]["args_correct"] for item in measured) / len(measured), 4) if measured else 0.0,
         "multiturn_accuracy": round(sum(item["result"]["passed"] for item in multi) / len(multi), 4) if multi else None,
         "base_multiturn_accuracy": round(sum(item["result"]["passed"] for item in base_multi) / len(base_multi), 4) if base_multi else None,
         "adversarial_passed_cases": sum(item["result"]["passed"] for item in adversarial),
         "adversarial_total_cases": len(adversarial),
-        "turns_evaluated": len(turns),
+        "cases_evaluated": len(measured),
         "failure_counts": dict(sorted(failures.items())),
     }
 
 
 def short_error(case_result: dict[str, Any], limit: int = 160) -> str:
-    for turn in case_result["turn_results"]:
-        if turn["failure_type"] == "provider_error" and turn["failures"]:
-            return " ".join(turn["failures"][0].split())[:limit]
+    result = case_result["result"]
+    if result["failure_type"] == "provider_error" and result["failures"]:
+        return " ".join(result["failures"][0].split())[:limit]
     return "unknown provider error"
 
 
