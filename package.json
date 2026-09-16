@@ -1,0 +1,10 @@
+{
+  "name": "pii-guard-lab",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "bash run_servers.command",
+    "dev:web": "npm run dev --prefix web",
+    "dev:api": "PYTHONPATH=starter_v0 python3 starter_v0/run_web.py --host 127.0.0.1 --port 8000"
+  }
+}

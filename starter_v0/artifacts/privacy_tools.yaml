@@ -1,0 +1,29 @@
+# PrivacyGuard AI tools used by the demo UI. Helpdesk eval tools stay unchanged above.
+tools:
+  - name: scan_dataset
+    description: "Summarize the uploaded CSV: row count, column count, and column names."
+    parameters:
+      type: object
+      properties:
+        dataset_id: {type: string, description: "Dataset id returned by /api/upload"}
+      required: [dataset_id]
+
+  - name: detect_pii
+    description: "Detect PII columns (email, phone, SSN, card, IP, name, address) in the uploaded dataset."
+    parameters:
+      type: object
+      properties:
+        dataset_id: {type: string, description: "Dataset id returned by /api/upload"}
+      required: [dataset_id]
+
+  - name: preview_masking
+    description: "Build a 5-row masked preview and a confirmation token. Do not write the full dataset."
+    parameters:
+      type: object
+      properties:
+        dataset_id: {type: string, description: "Dataset id returned by /api/upload"}
+        columns:
+          type: array
+          items: {type: string}
+          description: "Columns to mask. Omit to use detected PII columns."
+      required: [dataset_id]

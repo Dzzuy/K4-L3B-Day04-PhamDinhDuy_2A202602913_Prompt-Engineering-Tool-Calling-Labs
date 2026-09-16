@@ -1,7 +1,7 @@
 # Day 04 Lab v3 Report — Trợ lý AI của nhóm
 
-- Lĩnh vực tự chọn:
-- Nhiệm vụ và luồng cơ bản đã chốt trước v0:
+- Lĩnh vực tự chọn: **AI Agent phát hiện & masking PII phục vụ tuân thủ**
+- Nhiệm vụ và luồng cơ bản đã chốt trước v0: Người dùng tải CSV giả lập; agent gọi `scan_dataset` → `detect_pii` → `preview_masking`; chỉ ghi mask sau khi người dùng xác nhận (`Confirm Masking` / `POST /api/mask`). Không gửi PII thô ra ngoài.
 - Đường dẫn bộ 30 câu cơ bản và 12 câu an toàn; commit chốt bộ trước v0:
 - Chức năng mở rộng ngoài luồng cơ bản (nếu có; tối đa 10 trong tổng 100 điểm):
 
@@ -16,7 +16,7 @@
 
 ## A1. Agent này làm được gì
 
-> Viết 1–2 câu mô tả capability và giới hạn của agent.
+PrivacyGuard là trợ lý **phát hiện & masking PII phục vụ tuân thủ** trên dataset CSV giả lập: quét schema, chỉ cột có PII, xem trước bản che, rồi mask sau xác nhận. Agent không mask ghi đè khi chưa có `confirmation_token` và không xuất dữ liệu nhạy cảm ra công cụ bên ngoài.
 
 **Link dùng thử:**
 

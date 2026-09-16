@@ -1,0 +1,7 @@
+employee_id,full_name,email,phone,ssn,ip_address,department
+E-1042,Maya Chen,maya.chen@northstar.example,+1-415-555-0198,482-11-6734,10.12.4.88,People Ops
+E-1108,Omar Haddad,omar.haddad@northstar.example,415.555.2210,219-55-0182,10.12.4.91,Engineering
+E-1188,Priya Nair,priya.nair@northstar.example,+1 (628) 555-0144,511-22-9841,192.168.8.14,Finance
+E-1215,Leo Park,leo.park@northstar.example,628-555-0177,390-44-2218,10.12.9.3,Support
+E-1301,Sofia Alvarez,sofia.alvarez@northstar.example,415-555-0102,601-88-3321,172.16.2.44,Legal
+E-1410,Jonah Reed,jonah.reed@northstar.example,+1-415-555-0440,774-12-0098,10.12.4.102,Engineering

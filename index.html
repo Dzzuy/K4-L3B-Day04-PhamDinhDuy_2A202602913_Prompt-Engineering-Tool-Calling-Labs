@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PII Guard — Personal Information Detection & Protection</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #ffffff;
+      color: #171717;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: #ffffff;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .nav-container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #171717;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .brand svg {
+      width: 20px;
+      height: 20px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-link {
+      padding: 6px 12px;
+      font-size: 14px;
+      color: #525252;
+      text-decoration: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+    }
+    .nav-link:hover {
+      color: #171717;
+      background-color: #f5f5f5;
+    }
+    .nav-link.active {
+      color: #171717;
+      font-weight: 600;
+      background-color: #f5f5f5;
+    }
+    .nav-settings {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: #525252;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .nav-settings:hover, .nav-settings.active {
+      color: #171717;
+      background-color: #f5f5f5;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1040px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #171717;
+      margin-bottom: 6px;
+    }
+    .page-desc {
+      font-size: 14px;
+      color: #737373;
+      margin-bottom: 24px;
+    }
+    .text-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    /* Tabs */
+    .tab-nav {
+      display: inline-flex;
+      background-color: #f5f5f5;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid #e5e5e5;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: #525252;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background-color: #ffffff;
+      color: #171717;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .badge-critical {
+      background-color: #000000;
+      color: #ffffff;
+    }
+    .badge-high {
+      background-color: #e5e5e5;
+      color: #171717;
+      border: 1px solid #d4d4d4;
+    }
+    .badge-medium {
+      background-color: #f5f5f5;
+      color: #262626;
+      border: 1px solid #e5e5e5;
+    }
+    .badge-low {
+      background-color: #ffffff;
+      color: #525252;
+      border: 1px solid #e5e5e5;
+    }
+    .badge-status-protected {
+      background-color: #f5f5f5;
+      color: #171717;
+      border: 1px solid #d4d4d4;
+    }
+    .badge-status-protected::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #171717;
+    }
+    .badge-status-analyzed {
+      background-color: #fafafa;
+      color: #262626;
+      border: 1px solid #e5e5e5;
+    }
+    .badge-status-analyzed::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #737373;
+    }
+    .badge-status-pending {
+      background-color: #ffffff;
+      color: #737373;
+      border: 1px solid #e5e5e5;
+    }
+    .badge-status-pending::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #a3a3a3;
+    }
+    .badge-status-failed {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s, border-color 0.15s;
+      border: 1px solid transparent;
+    }
+    .btn-primary {
+      background-color: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+    .btn-primary:hover {
+      background-color: #262626;
+      border-color: #262626;
+    }
+    .btn-secondary {
+      background-color: #ffffff;
+      color: #171717;
+      border-color: #d4d4d4;
+    }
+    .btn-secondary:hover {
+      background-color: #f5f5f5;
+    }
+
+    /* Tables */
+    .table-container {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #ffffff;
+      margin-bottom: 20px;
+    }
+    .table-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e5e5e5;
+      background-color: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: #171717;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background-color: #fafafa;
+      padding: 10px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #737373;
+      font-weight: 500;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #e5e5e5;
+      color: #171717;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr.clickable:hover td {
+      background-color: #fafafa;
+      cursor: pointer;
+    }
+
+    /* Dropzone */
+    .dropzone {
+      border: 2px dashed #d4d4d4;
+      border-radius: 8px;
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      background-color: #ffffff;
+      transition: border-color 0.15s, background-color 0.15s;
+      margin-bottom: 24px;
+    }
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #171717;
+      background-color: #fafafa;
+    }
+    .dropzone svg {
+      width: 36px;
+      height: 36px;
+      stroke: #737373;
+      margin-bottom: 10px;
+    }
+    .dropzone-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #171717;
+      margin-bottom: 4px;
+    }
+    .dropzone-subtitle {
+      font-size: 12px;
+      color: #737373;
+    }
+
+    /* Card */
+    .card {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 20px;
+      background-color: #ffffff;
+      margin-bottom: 20px;
+    }
+    .grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      text-align: center;
+      padding: 12px 0;
+    }
+    .grid-metric-item:not(:last-child) {
+      border-right: 1px solid #e5e5e5;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: #737373;
+    }
+    .metric-value {
+      font-size: 20px;
+      font-weight: 600;
+      color: #171717;
+      margin-top: 4px;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* Sample Cards */
+    .sample-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .sample-btn {
+      padding: 12px 14px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      background-color: #ffffff;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    .sample-btn:hover {
+      border-color: #a3a3a3;
+      background-color: #fafafa;
+    }
+    .sample-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #171717;
+      font-family: ui-monospace, monospace;
+    }
+    .sample-meta {
+      font-size: 11px;
+      color: #737373;
+      margin-top: 2px;
+    }
+
+    /* Text Scrubber */
+    .scrub-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 768px) {
+      .scrub-container { grid-template-columns: 1fr; }
+    }
+    textarea.scrub-box {
+      width: 100%;
+      height: 220px;
+      padding: 12px;
+      font-size: 13px;
+      border: 1px solid #d4d4d4;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      outline: none;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    textarea.scrub-box:focus {
+      border-color: #171717;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-card {
+      background-color: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+    }
+
+    select, input[type="text"] {
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1px solid #d4d4d4;
+      border-radius: 4px;
+      background-color: #ffffff;
+      color: #171717;
+      font-family: ui-monospace, monospace;
+      outline: none;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: #171717;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #525252;
+      margin-bottom: 6px;
+    }
+
+    .flex-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header>
+    <div class="nav-container">
+      <div class="brand" onclick="showView('analyze')">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>PII Guard</span>
+      </div>
+
+      <nav class="nav-links">
+        <a class="nav-link active" id="nav-analyze" onclick="showView('analyze')">Analyze</a>
+        <a class="nav-link" id="nav-datasets" onclick="showView('datasets')">Datasets</a>
+        <a class="nav-link" id="nav-reports" onclick="showView('reports')">Reports</a>
+      </nav>
+
+      <a class="nav-settings" id="nav-settings" onclick="showView('settings')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Settings</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container Views -->
+  <main id="app-container">
+
+    <!-- 1. ANALYZE VIEW -->
+    <div id="view-analyze" class="view-panel">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 class="page-title">Analyze & Mask PII</h1>
+        <p class="page-desc" style="margin-bottom: 16px;">
+          Detect personal information, redact sensitive data, and assess privacy risks.
+        </p>
+
+        <div class="tab-nav">
+          <button class="tab-btn active" id="subtab-csv" onclick="switchAnalyzeSubmode('csv')">CSV Dataset (PII Masker)</button>
+          <button class="tab-btn" id="subtab-text" onclick="switchAnalyzeSubmode('text')">Text & Prompt Scrubber (ByePII)</button>
+        </div>
+      </div>
+
+      <!-- A. CSV DATASET -->
+      <div id="submode-csv-container">
+        <div id="analyze-upload-zone">
+          <div class="dropzone" id="dropzone-box" onclick="document.getElementById('csv-file-input').click()">
+            <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleFileSelect(event)">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <polyline points="16 16 12 12 8 16" />
+              <line x1="12" y1="12" x2="12" y2="21" />
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+              <polyline points="16 16 12 12 8 16" />
+            </svg>
+            <div class="dropzone-title">Drop CSV file here</div>
+            <div class="dropzone-subtitle">or <span style="text-decoration: underline; font-weight: 500; color: #171717;">Browse</span> from your computer</div>
+            <div style="margin-top: 14px; display: inline-block; padding: 3px 10px; background-color: #f5f5f5; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 11px; color: #737373;">
+              Supports RFC 4180 CSV up to 15MB · 100% In-Browser Privacy
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid #e5e5e5; padding-top: 20px;">
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #737373; text-align: center; margin-bottom: 12px;">
+              Or test pre-loaded sample datasets
+            </div>
+            <div class="sample-grid" id="sample-buttons-container"></div>
+          </div>
+        </div>
+
+        <div id="analyze-result-zone" class="hidden">
+          <div class="card">
+            <div class="flex-between" style="border-bottom: 1px solid #e5e5e5; padding-bottom: 14px; margin-bottom: 14px;">
+              <div>
+                <h2 style="font-size: 16px; font-weight: 600;" id="an-res-filename">filename.csv</h2>
+                <p style="font-size: 12px; color: #737373;" id="an-res-sub">10,000 records · 8 columns</p>
+              </div>
+              <div class="flex-between gap-8" id="an-res-badges"></div>
+            </div>
+            <div class="grid-metrics">
+              <div class="grid-metric-item">
+                <div class="metric-label">Total Records</div>
+                <div class="metric-value" id="an-res-records">0</div>
+              </div>
+              <div class="grid-metric-item">
+                <div class="metric-label">PII Fields Found</div>
+                <div class="metric-value" id="an-res-piicount">0</div>
+              </div>
+              <div class="grid-metric-item">
+                <div class="metric-label">Assessed Risk</div>
+                <div class="metric-value" id="an-res-risk">LOW</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="table-header">
+              <span>PII Findings</span>
+              <span style="font-size: 11px; color: #737373; font-weight: normal;">Rule-based & AI Classification</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>PII Type</th>
+                  <th>Confidence</th>
+                  <th>Risk</th>
+                  <th>Recommended Action</th>
+                </tr>
+              </thead>
+              <tbody id="an-findings-tbody"></tbody>
+            </table>
+          </div>
+
+          <div class="flex-between mt-16">
+            <button class="btn btn-secondary" onclick="resetAnalyze()">Analyze Another File</button>
+            <div class="flex-between gap-12">
+              <button class="btn btn-secondary" onclick="viewCurrentDetail()">View Details</button>
+              <button class="btn btn-primary" onclick="goToPolicyForCurrent()">Create Protection Policy →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. TEXT SCRUBBER -->
+      <div id="submode-text-container" class="hidden">
+        <div class="flex-between" style="margin-bottom: 8px;">
+          <span style="font-size: 12px; font-weight: 500; color: #525252;">Input Raw Text / Prompt</span>
+          <span style="font-size: 12px; font-weight: 500; color: #525252;">Sanitized Output (Safe for LLM)</span>
+        </div>
+
+        <div class="scrub-container">
+          <textarea id="raw-prompt-input" class="scrub-box" oninput="runTextScrubber()" placeholder="Paste sensitive text, email, phone, or prompt here..."></textarea>
+          <textarea id="sanitized-prompt-output" class="scrub-box" readonly placeholder="Redacted output will appear here in real-time..."></textarea>
+        </div>
+
+        <div class="flex-between">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 12px; color: #525252;">Replacement Style:</label>
+            <select id="scrub-style" onchange="runTextScrubber()">
+              <option value="TOKENS">Tokens ([NAME], [EMAIL], [PHONE])</option>
+              <option value="PARTIAL">Partial Mask (j***@company.org, ***-0198)</option>
+              <option value="REDACTED">[REDACTED]</option>
+              <option value="HASH">SHA256 Hash</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" onclick="loadSamplePrompt()">Load Sample</button>
+            <button class="btn btn-primary" onclick="copySanitizedText()">Copy Sanitized Text</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. DATASETS VIEW -->
+    <div id="view-datasets" class="view-panel hidden">
+      <div class="flex-between" style="margin-bottom: 16px;">
+        <div>
+          <h1 class="page-title">Datasets</h1>
+          <p class="page-desc" style="margin-bottom: 0;">
+            All registered data sources, personal data evaluations, and protection status.
+          </p>
+        </div>
+        <button class="btn btn-primary" onclick="showView('analyze')">+ Upload Dataset</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Dataset</th>
+              <th>Records</th>
+              <th>PII</th>
+              <th>Risk</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="datasets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. DATASET DETAIL VIEW -->
+    <div id="view-detail" class="view-panel hidden">
+      <div class="flex-between" style="border-bottom: 1px solid #e5e5e5; padding-bottom: 16px; margin-bottom: 20px;">
+        <div>
+          <div style="font-size: 12px; color: #737373; margin-bottom: 4px; cursor: pointer;" onclick="showView('datasets')">
+            ← Back to Datasets
+          </div>
+          <h1 class="page-title" style="margin-bottom: 0;" id="dt-filename">customer.csv</h1>
+        </div>
+        <div class="flex-between gap-12" id="dt-top-actions"></div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">Dataset Information</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); font-size: 13px;">
+          <div style="padding: 16px; border-right: 1px solid #e5e5e5;">
+            <div style="font-size: 11px; color: #737373;">File Name</div>
+            <div style="font-weight: 500; margin-top: 4px;" class="text-mono" id="dt-info-filename">customer.csv</div>
+          </div>
+          <div style="padding: 16px; border-right: 1px solid #e5e5e5;">
+            <div style="font-size: 11px; color: #737373;">Number of Records</div>
+            <div style="font-weight: 500; margin-top: 4px;" class="text-mono" id="dt-info-records">10,000</div>
+          </div>
+          <div style="padding: 16px; border-right: 1px solid #e5e5e5;">
+            <div style="font-size: 11px; color: #737373;">Number of Columns</div>
+            <div style="font-weight: 500; margin-top: 4px;" class="text-mono" id="dt-info-cols">8</div>
+          </div>
+          <div style="padding: 16px;">
+            <div style="font-size: 11px; color: #737373;">Status</div>
+            <div style="margin-top: 4px;" id="dt-info-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <span>PII Findings</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th>PII Type</th>
+              <th>Confidence</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody id="dt-findings-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex-between mt-16">
+        <button class="btn btn-secondary" onclick="showView('datasets')">Back to List</button>
+        <button class="btn btn-primary" onclick="goToPolicyForDetail()">Protection Policy →</button>
+      </div>
+    </div>
+
+    <!-- 4. PROTECTION POLICY VIEW -->
+    <div id="view-policy" class="view-panel hidden" style="max-width: 680px; margin: 0 auto;">
+      <div style="border-bottom: 1px solid #e5e5e5; padding-bottom: 16px; margin-bottom: 20px;">
+        <div style="font-size: 12px; color: #737373; margin-bottom: 4px; cursor: pointer;" onclick="showView('datasets')">
+          ← Cancel
+        </div>
+        <h1 class="page-title">Protection Policy</h1>
+        <p class="page-desc" style="margin-bottom: 0;">
+          Column-by-column redaction action suggested by AI agent.
+        </p>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">Protection Matrix</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th>Recommended Action</th>
+            </tr>
+          </thead>
+          <tbody id="policy-matrix-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex-between mt-24">
+        <button class="btn btn-secondary" onclick="showView('datasets')">Cancel</button>
+        <button class="btn btn-primary" onclick="applyCurrentPolicy()">Apply Protection</button>
+      </div>
+    </div>
+
+    <!-- 5. PROTECTION RESULT VIEW -->
+    <div id="view-result" class="view-panel hidden" style="max-width: 520px; margin: 24px auto;">
+      <div class="card" style="padding: 24px;">
+        <h1 class="page-title" style="font-size: 20px; margin-bottom: 4px;">Protection completed</h1>
+        <p style="font-size: 12px; color: #737373;" class="text-mono" id="res-filename">customer.csv</p>
+
+        <div style="border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; padding: 16px 0; margin: 20px 0; display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
+          <div class="flex-between">
+            <span style="color: #737373;">Records processed</span>
+            <span class="text-mono" style="font-weight: 600;" id="res-rec">10,000</span>
+          </div>
+          <div class="flex-between">
+            <span style="color: #737373;">PII fields detected</span>
+            <span class="text-mono" style="font-weight: 600;" id="res-pii">6</span>
+          </div>
+          <div class="flex-between">
+            <span style="color: #737373;">Values protected</span>
+            <span class="text-mono" style="font-weight: 600;" id="res-val">42,183</span>
+          </div>
+          <div class="flex-between">
+            <span style="color: #737373;">Verification</span>
+            <span class="badge badge-status-protected">PASSED</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button class="btn btn-primary" style="width: 100%; padding: 10px;" onclick="downloadCurrentCsv()">
+            Download Protected CSV
+          </button>
+          <button class="btn btn-secondary" style="width: 100%; padding: 10px;" onclick="downloadCurrentAudit()">
+            Download Audit Report
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-between" style="font-size: 12px; padding: 0 4px;">
+        <a style="color: #737373; text-decoration: underline; cursor: pointer;" onclick="showView('datasets')">View all datasets</a>
+        <a style="color: #737373; text-decoration: underline; cursor: pointer;" onclick="showView('reports')">View audit reports</a>
+      </div>
+    </div>
+
+    <!-- 6. REPORTS VIEW -->
+    <div id="view-reports" class="view-panel hidden">
+      <div style="margin-bottom: 20px;">
+        <h1 class="page-title">Reports</h1>
+        <p class="page-desc" style="margin-bottom: 0;">
+          Audit reports and cryptographic compliance verification logs.
+        </p>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Dataset</th>
+              <th>PII Found</th>
+              <th>Protected</th>
+              <th>Verification</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="reports-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 7. SETTINGS VIEW -->
+    <div id="view-settings" class="view-panel hidden" style="max-width: 520px; margin: 0 auto;">
+      <div style="border-bottom: 1px solid #e5e5e5; padding-bottom: 16px; margin-bottom: 24px;">
+        <h1 class="page-title">Settings</h1>
+        <p class="page-desc" style="margin-bottom: 0;">
+          AI Provider, Model, and privacy configuration status.
+        </p>
+      </div>
+
+      <form onsubmit="saveSettingsForm(event)">
+        <div class="form-group">
+          <label class="form-label">AI Provider</label>
+          <select id="set-provider" style="width: 100%;">
+            <option value="OpenRouter (Claude 3.5 Sonnet)">OpenRouter (Claude 3.5 Sonnet)</option>
+            <option value="OpenAI (GPT-4o mini)">OpenAI (GPT-4o mini)</option>
+            <option value="Local Rule-based Engine">Local Rule-based Engine (Offline fallback)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Model</label>
+          <input type="text" id="set-model" value="anthropic/claude-3-5-sonnet" style="width: 100%;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">API Configuration Status</label>
+          <div class="flex-between" style="padding: 8px 12px; background-color: #fafafa; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 12px;">
+            <span class="text-mono">Connected · Ready</span>
+            <span class="badge badge-status-protected">Operational</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">File Size Limit</label>
+          <input type="text" id="set-filesize" value="15 MB" style="width: 100%;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Default Masking Policy</label>
+          <select id="set-defaultpolicy" style="width: 100%;">
+            <option value="PARTIAL_MASK">PARTIAL_MASK (Recommended)</option>
+            <option value="FULL_MASK">FULL_MASK</option>
+            <option value="HASH">HASH</option>
+            <option value="ANONYMIZE">ANONYMIZE</option>
+            <option value="GENERALIZE">GENERALIZE</option>
+            <option value="SUPPRESS">SUPPRESS</option>
+            <option value="KEEP">KEEP</option>
+          </select>
+        </div>
+
+        <div id="settings-alert" class="hidden" style="padding: 10px; background-color: #f5f5f5; border: 1px solid #d4d4d4; border-radius: 4px; font-size: 12px; margin-bottom: 16px;">
+          ✓ Settings saved successfully.
+        </div>
+
+        <div style="text-align: right;">
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Report Details Modal -->
+  <div id="report-modal" class="modal-overlay hidden" onclick="closeModalOnOverlay(event)">
+    <div class="modal-card">
+      <div class="flex-between" style="border-bottom: 1px solid #e5e5e5; padding-bottom: 12px; margin-bottom: 16px;">
+        <div>
+          <div style="font-size: 14px; font-weight: 600;" id="modal-rep-title">Audit Report</div>
+          <div style="font-size: 11px; color: #737373;" class="text-mono" id="modal-rep-date">2026-09-15 14:22</div>
+        </div>
+        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="closeModal()">✕</button>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; color: #737373; margin-bottom: 4px;">Verification Checkpoint</div>
+        <div id="modal-rep-status"></div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; color: #737373; margin-bottom: 4px;">Audit Summary</div>
+        <div style="font-size: 12px; background-color: #fafafa; border: 1px solid #e5e5e5; border-radius: 6px; padding: 12px;" id="modal-rep-summary"></div>
+      </div>
+
+      <div style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-primary" onclick="downloadModalAudit()">Download Audit File</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DATASETS = [
+      {
+        id: "ds-customer",
+        filename: "customer.csv",
+        records: 10000,
+        piiCount: 6,
+        risk: "HIGH",
+        status: "Protected",
+        createdAt: "2026-09-15 14:20",
+        piiFindings: [
+          { column: "name", piiType: "NAME", confidence: "98%", risk: "MEDIUM", action: "PARTIAL_MASK" },
+          { column: "phone", piiType: "PHONE", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "email", piiType: "EMAIL", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "cccd", piiType: "NATIONAL_ID", confidence: "99%", risk: "CRITICAL", action: "FULL_MASK" },
+          { column: "dob", piiType: "DATE", confidence: "91%", risk: "MEDIUM", action: "GENERALIZE" },
+          { column: "address", piiType: "ADDRESS", confidence: "95%", risk: "MEDIUM", action: "PARTIAL_MASK" }
+        ],
+        valuesProtected: 42183
+      },
+      {
+        id: "ds-users",
+        filename: "users.csv",
+        records: 5200,
+        piiCount: 4,
+        risk: "MEDIUM",
+        status: "Analyzed",
+        createdAt: "2026-09-15 15:10",
+        piiFindings: [
+          { column: "username", piiType: "NAME", confidence: "95%", risk: "MEDIUM", action: "PARTIAL_MASK" },
+          { column: "email", piiType: "EMAIL", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "phone_number", piiType: "PHONE", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "ip_address", piiType: "IP_ADDRESS", confidence: "97%", risk: "LOW", action: "PARTIAL_MASK" }
+        ],
+        valuesProtected: 20800
+      },
+      {
+        id: "ds-employee",
+        filename: "employee.csv",
+        records: 2100,
+        piiCount: 7,
+        risk: "HIGH",
+        status: "Pending",
+        createdAt: "2026-09-15 16:45",
+        piiFindings: [
+          { column: "full_name", piiType: "NAME", confidence: "99%", risk: "MEDIUM", action: "PARTIAL_MASK" },
+          { column: "work_email", piiType: "EMAIL", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "mobile", piiType: "PHONE", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" },
+          { column: "ssn", piiType: "NATIONAL_ID", confidence: "99%", risk: "CRITICAL", action: "FULL_MASK" },
+          { column: "birth_date", piiType: "DATE", confidence: "94%", risk: "MEDIUM", action: "GENERALIZE" },
+          { column: "home_address", piiType: "ADDRESS", confidence: "96%", risk: "MEDIUM", action: "PARTIAL_MASK" },
+          { column: "bank_account", piiType: "FINANCIAL", confidence: "99%", risk: "CRITICAL", action: "FULL_MASK" }
+        ],
+        valuesProtected: 14700
+      }
+    ];
+
+    const REPORTS = [
+      { id: "rep-1", dataset: "customer.csv", piiFound: 6, protected: 6, verification: "PASSED", date: "2026-09-15 14:22", summary: "Complete pseudonymization and masking applied to 10,000 records. Zero plaintext PII leaks detected." },
+      { id: "rep-2", dataset: "users.csv", piiFound: 4, protected: 4, verification: "PASSED", date: "2026-09-15 15:15", summary: "High-risk user credentials and contact vectors masked across 5,200 records. Verification clean." },
+      { id: "rep-3", dataset: "employee.csv", piiFound: 7, protected: 6, verification: "FAILED", date: "2026-09-15 16:50", summary: "Compliance audit flagged unmasked financial field (bank_account) requiring confirmation." }
+    ];
+
+    let currentDataset = DATASETS[0];
+    let selectedReport = null;
+
+    const ACTIONS = ["KEEP", "FULL_MASK", "PARTIAL_MASK", "HASH", "ANONYMIZE", "GENERALIZE", "SUPPRESS"];
+
+    function showView(viewName) {
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
+      document.querySelectorAll(".nav-link, .nav-settings").forEach(l => l.classList.remove("active"));
+
+      const target = document.getElementById("view-" + viewName);
+      if (target) target.classList.remove("hidden");
+
+      const navEl = document.getElementById("nav-" + viewName);
+      if (navEl) navEl.classList.add("active");
+
+      if (viewName === "datasets") renderDatasetsTable();
+      if (viewName === "reports") renderReportsTable();
+      window.scrollTo(0, 0);
+    }
+
+    function switchAnalyzeSubmode(mode) {
+      if (mode === "csv") {
+        document.getElementById("submode-csv-container").classList.remove("hidden");
+        document.getElementById("submode-text-container").classList.add("hidden");
+        document.getElementById("subtab-csv").classList.add("active");
+        document.getElementById("subtab-text").classList.remove("active");
+      } else {
+        document.getElementById("submode-csv-container").classList.add("hidden");
+        document.getElementById("submode-text-container").classList.remove("hidden");
+        document.getElementById("subtab-csv").classList.remove("active");
+        document.getElementById("subtab-text").classList.add("active");
+        runTextScrubber();
+      }
+    }
+
+    function renderBadgeRisk(risk) {
+      const r = (risk || "LOW").toUpperCase();
+      let cls = "badge-low";
+      if (r === "CRITICAL") cls = "badge-critical";
+      else if (r === "HIGH") cls = "badge-high";
+      else if (r === "MEDIUM") cls = "badge-medium";
+      return `<span class="badge ${cls}">${r}</span>`;
+    }
+
+    function renderBadgeStatus(status) {
+      const s = status || "Pending";
+      let cls = "badge-status-pending";
+      if (s === "Protected" || s === "PASSED") cls = "badge-status-protected";
+      else if (s === "Analyzed") cls = "badge-status-analyzed";
+      else if (s === "FAILED") cls = "badge-status-failed";
+      return `<span class="badge ${cls}">${s}</span>`;
+    }
+
+    function initAnalyzeSamples() {
+      const container = document.getElementById("sample-buttons-container");
+      if (!container) return;
+      container.innerHTML = "";
+      DATASETS.forEach(ds => {
+        const btn = document.createElement("button");
+        btn.className = "sample-btn";
+        btn.onclick = () => selectSampleDataset(ds);
+        btn.innerHTML = `
+          <div>
+            <div class="sample-name">${ds.filename}</div>
+            <div class="sample-meta">${ds.records.toLocaleString()} rows · ${ds.piiCount} PII</div>
+          </div>
+          ${renderBadgeRisk(ds.risk)}
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectSampleDataset(ds) {
+      currentDataset = ds;
+      document.getElementById("analyze-upload-zone").classList.add("hidden");
+      const resZone = document.getElementById("analyze-result-zone");
+      resZone.classList.remove("hidden");
+
+      document.getElementById("an-res-filename").innerText = ds.filename;
+      document.getElementById("an-res-sub").innerText = `${ds.records.toLocaleString()} records · ${ds.piiFindings.length} columns`;
+      document.getElementById("an-res-badges").innerHTML = `${renderBadgeRisk(ds.risk)} ${renderBadgeStatus(ds.status)}`;
+      document.getElementById("an-res-records").innerText = ds.records.toLocaleString();
+      document.getElementById("an-res-piicount").innerText = ds.piiCount;
+      document.getElementById("an-res-risk").innerText = ds.risk;
+
+      const tbody = document.getElementById("an-findings-tbody");
+      tbody.innerHTML = "";
+      ds.piiFindings.forEach(f => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="text-mono" style="font-weight: 500;">${f.column}</td>
+          <td class="text-mono">${f.piiType}</td>
+          <td>${f.confidence}</td>
+          <td>${renderBadgeRisk(f.risk)}</td>
+          <td class="text-mono">${f.action}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function resetAnalyze() {
+      document.getElementById("analyze-upload-zone").classList.remove("hidden");
+      document.getElementById("analyze-result-zone").classList.add("hidden");
+      document.getElementById("csv-file-input").value = "";
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length === 0) return alert("File is empty.");
+
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"(.*)"$/, "$1"));
+        const rowCount = lines.length - 1;
+
+        const findings = [];
+        headers.forEach(h => {
+          const lower = h.toLowerCase();
+          if (lower.includes("name")) findings.push({ column: h, piiType: "NAME", confidence: "98%", risk: "MEDIUM", action: "PARTIAL_MASK" });
+          else if (lower.includes("email") || lower.includes("mail")) findings.push({ column: h, piiType: "EMAIL", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" });
+          else if (lower.includes("phone") || lower.includes("tel") || lower.includes("cell")) findings.push({ column: h, piiType: "PHONE", confidence: "99%", risk: "HIGH", action: "PARTIAL_MASK" });
+          else if (lower.includes("cccd") || lower.includes("ssn") || lower.includes("id")) findings.push({ column: h, piiType: "NATIONAL_ID", confidence: "99%", risk: "CRITICAL", action: "FULL_MASK" });
+          else if (lower.includes("birth") || lower.includes("dob") || lower.includes("date")) findings.push({ column: h, piiType: "DATE", confidence: "91%", risk: "MEDIUM", action: "GENERALIZE" });
+          else if (lower.includes("address") || lower.includes("street")) findings.push({ column: h, piiType: "ADDRESS", confidence: "95%", risk: "MEDIUM", action: "PARTIAL_MASK" });
+        });
+
+        const newDs = {
+          id: "ds-" + Date.now(),
+          filename: file.name,
+          records: rowCount || 100,
+          piiCount: findings.length,
+          risk: findings.some(f => f.risk === "CRITICAL") ? "CRITICAL" : findings.some(f => f.risk === "HIGH") ? "HIGH" : "MEDIUM",
+          status: "Analyzed",
+          createdAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+          piiFindings: findings,
+          valuesProtected: (rowCount || 100) * findings.length
+        };
+
+        DATASETS.unshift(newDs);
+        selectSampleDataset(newDs);
+      };
+      reader.readAsText(file);
+    }
+
+    const PII_REGEXES = [
+      { type: "EMAIL", regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g },
+      { type: "PHONE", regex: /(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b/g },
+      { type: "NATIONAL_ID", regex: /\b\d{9,12}\b|\b\d{3}-\d{2}-\d{4}\b/g },
+      { type: "CREDIT_CARD", regex: /\b(?:\d{4}[-\s]?){3}\d{4}\b/g },
+      { type: "NAME", regex: /\b(Nguyen Van [A-Z]|Tran Thi [A-Z]|John Miller|Hana Vo|Ken Tran)\b/g }
+    ];
+
+    function runTextScrubber() {
+      const inputEl = document.getElementById("raw-prompt-input");
+      if (!inputEl) return;
+      const input = inputEl.value;
+      const style = document.getElementById("scrub-style").value;
+      let output = input;
+
+      PII_REGEXES.forEach(rule => {
+        output = output.replace(rule.regex, (val) => {
+          if (style === "TOKENS") return `[${rule.type}]`;
+          if (style === "REDACTED") return "[REDACTED]";
+          if (style === "HASH") return "h_" + Math.abs(val.length * 37).toString(16);
+          if (style === "PARTIAL") {
+            if (rule.type === "EMAIL" && val.includes("@")) {
+              const parts = val.split("@");
+              return parts[0].charAt(0) + "***@" + parts[1];
+            }
+            if (val.length > 4) return "***-***-" + val.slice(-4);
+            return val.charAt(0) + "***";
+          }
+          return "[REDACTED]";
+        });
+      });
+
+      document.getElementById("sanitized-prompt-output").value = output;
+    }
+
+    function loadSamplePrompt() {
+      document.getElementById("raw-prompt-input").value = "Subject: Urgent Audit Request\nCustomer: John Miller\nEmail: john.miller@company.org\nPhone: +1-415-555-0198\nNational ID: 001099012345\nPlease redact before sending to ChatGPT.";
+      runTextScrubber();
+    }
+
+    function copySanitizedText() {
+      const val = document.getElementById("sanitized-prompt-output").value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => {
+        alert("Copied sanitized text to clipboard!");
+      });
+    }
+
+    function viewCurrentDetail() { openDatasetDetail(currentDataset.id); }
+    function goToPolicyForCurrent() { openPolicyView(currentDataset.id); }
+
+    function renderDatasetsTable() {
+      const tbody = document.getElementById("datasets-tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      DATASETS.forEach(ds => {
+        const tr = document.createElement("tr");
+        tr.className = "clickable";
+        tr.onclick = () => openDatasetDetail(ds.id);
+        tr.innerHTML = `
+          <td class="text-mono" style="font-weight: 500;">${ds.filename}</td>
+          <td class="text-mono">${ds.records.toLocaleString()}</td>
+          <td class="text-mono">${ds.piiCount}</td>
+          <td>${renderBadgeRisk(ds.risk)}</td>
+          <td>${renderBadgeStatus(ds.status)}</td>
+          <td style="text-align: right; color: #a3a3a3;">→</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openDatasetDetail(id) {
+      const ds = DATASETS.find(d => d.id === id) || DATASETS[0];
+      currentDataset = ds;
+
+      document.getElementById("dt-filename").innerText = ds.filename;
+      document.getElementById("dt-info-filename").innerText = ds.filename;
+      document.getElementById("dt-info-records").innerText = ds.records.toLocaleString();
+      document.getElementById("dt-info-cols").innerText = ds.piiFindings.length + 2;
+      document.getElementById("dt-info-status").innerHTML = renderBadgeStatus(ds.status);
+
+      const topActions = document.getElementById("dt-top-actions");
+      topActions.innerHTML = "";
+      if (ds.status === "Protected") {
+        const btnRes = document.createElement("button");
+        btnRes.className = "btn btn-secondary";
+        btnRes.innerText = "View Result";
+        btnRes.onclick = () => showResultView(ds);
+        topActions.appendChild(btnRes);
+      }
+      const btnPol = document.createElement("button");
+      btnPol.className = "btn btn-primary";
+      btnPol.innerText = "Configure Policy →";
+      btnPol.onclick = () => openPolicyView(ds.id);
+      topActions.appendChild(btnPol);
+
+      const tbody = document.getElementById("dt-findings-tbody");
+      tbody.innerHTML = "";
+      ds.piiFindings.forEach(f => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="text-mono" style="font-weight: 500;">${f.column}</td>
+          <td class="text-mono">${f.piiType}</td>
+          <td>${f.confidence}</td>
+          <td>${renderBadgeRisk(f.risk)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      showView("detail");
+    }
+
+    function goToPolicyForDetail() { openPolicyView(currentDataset.id); }
+
+    function openPolicyView(id) {
+      const ds = DATASETS.find(d => d.id === id) || DATASETS[0];
+      currentDataset = ds;
+
+      const tbody = document.getElementById("policy-matrix-tbody");
+      tbody.innerHTML = "";
+      ds.piiFindings.forEach(f => {
+        const tr = document.createElement("tr");
+        let optionsHtml = ACTIONS.map(act => `
+          <option value="${act}" ${act === f.action ? "selected" : ""}>${act}</option>
+        `).join("");
+
+        tr.innerHTML = `
+          <td class="text-mono" style="font-weight: 500;">${f.column}</td>
+          <td>
+            <select onchange="updateFindingAction('${f.column}', this.value)">
+              ${optionsHtml}
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      showView("policy");
+    }
+
+    function updateFindingAction(column, action) {
+      const finding = currentDataset.piiFindings.find(f => f.column === column);
+      if (finding) finding.action = action;
+    }
+
+    function applyCurrentPolicy() {
+      currentDataset.status = "Protected";
+      showResultView(currentDataset);
+    }
+
+    function showResultView(ds) {
+      currentDataset = ds;
+      document.getElementById("res-filename").innerText = ds.filename;
+      document.getElementById("res-rec").innerText = ds.records.toLocaleString();
+      document.getElementById("res-pii").innerText = ds.piiCount;
+      document.getElementById("res-val").innerText = ds.valuesProtected.toLocaleString();
+      showView("result");
+    }
+
+    function downloadCurrentCsv() {
+      const content = "id,name,phone,email,cccd,status\n101,N*** A,***-***-5678,n***@example.com,************,Protected\n102,T*** B,***-***-3456,t***@example.com,************,Protected\n103,L*** C,***-***-5777,l***@example.com,************,Protected";
+      const blob = new Blob([content], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `protected_${currentDataset.filename}`;
+      a.click();
+    }
+
+    function downloadCurrentAudit() {
+      const content = `=======================================================\nPII GUARD AUDIT REPORT & COMPLIANCE VERIFICATION\n=======================================================\nDataset:        ${currentDataset.filename}\nRecords:        ${currentDataset.records.toLocaleString()}\nPII Detected:   ${currentDataset.piiCount}\nVerification:   PASSED\nStatus:         Protected\n=======================================================`;
+      const blob = new Blob([content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `audit_report_${currentDataset.filename.replace('.csv','')}.txt`;
+      a.click();
+    }
+
+    function renderReportsTable() {
+      const tbody = document.getElementById("reports-tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      REPORTS.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.className = "clickable";
+        tr.onclick = () => openReportModal(r);
+        tr.innerHTML = `
+          <td class="text-mono" style="font-weight: 500;">${r.dataset}</td>
+          <td class="text-mono">${r.piiFound}</td>
+          <td class="text-mono">${r.protected}</td>
+          <td>${renderBadgeStatus(r.verification)}</td>
+          <td style="text-align: right; color: #a3a3a3;">→</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openReportModal(rep) {
+      selectedReport = rep;
+      document.getElementById("modal-rep-title").innerText = `Audit Report: ${rep.dataset}`;
+      document.getElementById("modal-rep-date").innerText = rep.date;
+      document.getElementById("modal-rep-status").innerHTML = renderBadgeStatus(rep.verification);
+      document.getElementById("modal-rep-summary").innerText = rep.summary;
+      document.getElementById("report-modal").classList.remove("hidden");
+    }
+
+    function closeModal() { document.getElementById("report-modal").classList.add("hidden"); }
+    function closeModalOnOverlay(e) { if (e.target.id === "report-modal") closeModal(); }
+
+    function downloadModalAudit() {
+      if (!selectedReport) return;
+      const content = `PII GUARD COMPLIANCE AUDIT\nDataset: ${selectedReport.dataset}\nDate: ${selectedReport.date}\nVerification: ${selectedReport.verification}\n\nSummary:\n${selectedReport.summary}`;
+      const blob = new Blob([content], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `audit_${selectedReport.dataset.replace('.csv','')}.txt`;
+      a.click();
+    }
+
+    function saveSettingsForm(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById("settings-alert");
+      alertBox.classList.remove("hidden");
+      setTimeout(() => alertBox.classList.add("hidden"), 3000);
+    }
+
+    // Auto-run on load
+    try {
+      initAnalyzeSamples();
+      renderDatasetsTable();
+      renderReportsTable();
+    } catch(err) {
+      console.error(err);
+    }
+  </script>
+</body>
+</html>
